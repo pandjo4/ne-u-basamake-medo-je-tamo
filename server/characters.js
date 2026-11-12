@@ -12,7 +12,6 @@ const characters = [
  ['Kameni hodač','Kameni hodač','Možeš jednom po potezu izabrati fiksno kretanje 4 umjesto bacanja.','fixed','troll','#8c9b83'],
  ['Autsaider','Autsaider','Ako si posljednji, dobijaš 1 bonus bod, najviše 2 puta po utrci.','lastPoint','rabbit','#e8c2b4'],
  ['Dvostruka nevolja','Dvostruka nevolja','Dva puta po utrci možeš baciti dodatnu kockicu i sabrati rezultat.','double','goblin','#8cb36b'],
- ['Izbacivač','Izbacivač','Prvi put kada staneš na protivnika, vrati ga 6 polja unazad.','eliminate','ogre','#b77b5c'],
  ['Sakupljač šestica','Sakupljač šestica','Počinješ utrku sa 4 bonus boda; prirodna šestica te vraća na START i oduzima 1 bod.','sixPenalty','gremlin','#e0b94e'],
  ['Savršeni korak','Savršeni korak','Protivnici moraju baciti tačan broj da završe; ti završavaš normalno.','exactFinish','unicorn','#f2d5f0'],
  ['Očajnik','Očajnik','Ako si posljednji, kretanje se utrostručuje; inače se krećeš unazad.','desperate','wolf','#777f98'],
@@ -29,7 +28,7 @@ const characters = [
  ['Šestica za start','Šest za start','Ne možeš napustiti START bez šestice; nakon toga biraš kretanje 1–5.','sixStart','turtle','#5d9c78'],
  ['Majstor parnih','Majstor parnih','Paran rezultat daje +2; neparan te pomjera 1 unazad.','even','badger','#8e9d9b'],
  ['Majstor neparnih','Majstor neparnih','Neparan rezultat daje +2; paran te pomjera 1 unazad.','odd','mongoose','#bd8d54'],
- ['Pali heroj','Pali heroj','Ne gubiš potez kada staneš na TRIP polje.','ignoreTrip','knight','#a5a5a5'],
+ ['Pali heroj','Pali heroj','Ne gubiš potez kada staneš na TRIP polje. Uz to dobijaš +1 na svako bacanje kockice ','heroBonus','knight','#a5a5a5'],
  ['Kradljivac novčića','Kradljivac novčića','Prirodna 1 ili 6 prebacuje jedan žeton od najbogatijeg ka najsiromašnijem.','coin','pixie','#e9c85b'],
  ['Potres','Potres','Prirodna trojka obara sve ostale aktivne trkače.','earthquake','stone','#9b806b'],
  ['Gospodar lutaka','Gospodar lutaka','Umjesto svog kretanja možeš pomjeriti protivnika unazad za rezultat kockice. Možeš koristiti neograničeno puta.','reverseControl','puppet','#a36e9b'],
@@ -40,7 +39,7 @@ const characters = [
  ['Skakač preko prepreka','Skakač','Preskačeš negativne efekte polja i ne aktiviraš sudare dok prolaziš preko trkača.','jump','griffin','#c49a55'],
  ['Blatni trkač','Blatni trkač','TRIP polja te ubrzavaju 2 polja umjesto da te obore.','tripBoost','boar','#9c7459'],
  ['Trgovac koracima','Trgovac koracima','Umjesto bacanja kockice možeš platiti 1 novčić i odabrati kretanje od 1 do 8 polja.','paidMove','jellyfish','#7ca8d6'],
- ['Štedljivac','Štedljivac','Počinješ sa 4 novčića, a nakon svakog svog bacanja dobijaš 2 novčića umjesto 1.','coinBonus','gremlin','#d6b45a'],
+ ['Štedljivac','Štedljivac','Počinješ sa 1 dodatnim novčićem. Kada staneš na PAD ili negativno polje (-1/-2), dobijaš 1 novčić.','thrifty','gremlin','#d6b45a'],
  ['Komet','Komet','Prirodna šestica daje još jedno bacanje, ali dodatno bacanje ne može lančano aktivirati ovu sposobnost.','sixExtra','comet','#e28b62']
-].map((x,i)=>({id:`c${String(i+1).padStart(2,'0')}`,name:x[0],title:x[1],description:x[2],ability:x[3],species:x[4],color:x[5],image:`/pictures/${x[4]}.png`}));
-module.exports = characters;
+].map((x,i)=>({id:`c${String(i+1+(i>=11?1:0)).padStart(2,'0')}`,name:x[0],title:x[1],description:x[2],ability:x[3],species:x[4],color:x[5],image:`/pictures/${x[4]}.png`}));
+module.exports = characters.filter(c=>c.ability!=='eliminate');

@@ -1,7 +1,7 @@
 'use strict';
 const path=require('path'),http=require('http'),crypto=require('crypto');
 const express=require('express');const {Server}=require('socket.io');
-const {catalog,createRace,roll,turn,scoreRace,clone}=require('./gameLogic');
+const {catalog,createRace,roll,turn,activateAbility,scoreRace,clone}=require('./gameLogic');
 const app=express(),server=http.createServer(app),io=new Server(server,{cors:{origin:true}});
 app.use(express.static(path.join(__dirname,'../public')));app.get('/health',(req,res)=>res.json({ok:true,game:'Ne u basamake, medo je tamo'}));
 const rooms=new Map(),socketPlayers=new Map();const code=()=>crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -69,6 +69,7 @@ io.on('connection',s=>{
   }
   emit(room);
  });
+ s.on('activateAbility',({type,value}={})=>{const z=findPlayer(s);if(!z)return;const {room,player}=z;if(room.phase!=='race'||!room.race)return err(s,'Utrka nije aktivna.');try{activateAbility(room.race,player.id,type,value);recordRaceResult(room);emit(room);}catch(e){err(s,e.message);}});
  s.on('roll',choice=>{const z=findPlayer(s);if(!z)return;const {room,player}=z;if(room.phase!=='race'||!room.race)return err(s,'Utrka nije aktivna.');try{roll(room.race,player.id,choice||{});recordRaceResult(room);emit(room);}catch(e){err(s,e.message);}});
  s.on('nextRace',()=>{const z=findPlayer(s);if(!z)return;const {room,player}=z;if(player.id!==room.hostId)return err(s,'Samo domaćin može nastaviti.');if(room.phase!=='race'||room.race?.status!=='finished')return err(s,'Trenutna utrka još nije završena.');if(room.raceNo+1>=room.raceCount){room.phase='finished';}else{room.raceNo++;room.race=createRace(room,room.raceNo);room.raceScored=false;}emit(room);});
  s.on('rematch',()=>{const z=findPlayer(s);if(!z)return;const {room,player}=z;if(player.id!==room.hostId)return err(s,'Samo domaćin može pokrenuti novi meč.');if(room.phase!=='finished')return err(s,'Meč još nije završen.');room.players.forEach(p=>{p.score=0;p.picks=[];p.ready=false;p.lineupConfirmed=false;});room.phase='lobby';room.raceNo=0;room.race=null;room.draft=null;room.raceResults=[];room.raceScored=false;emit(room);});

@@ -1,6 +1,6 @@
 'use strict';
-const test=require('node:test');const assert=require('node:assert/strict');const {catalog,createRace,roll,turn}=require('../server/gameLogic');
-test('roster contains 41 unique character cards',()=>{assert.equal(catalog.length,41);assert.equal(new Set(catalog.map(c=>c.id)).size,41);});
+const test=require('node:test');const assert=require('node:assert/strict');const {catalog,createRace,roll,turn,activateAbility,rank}=require('../server/gameLogic');
+test('roster contains 40 unique character cards after removing Izbacivač',()=>{assert.equal(catalog.length,40);assert.equal(new Set(catalog.map(c=>c.id)).size,40);});
 test('race has three fixed negative spaces and two trip spaces',()=>{const room={players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]};const r=createRace(room,0);assert.equal(Object.keys(r.effects).length,3);assert.ok(![9,22].some(n=>Object.hasOwn(r.effects,n)));});
 test('server rejects a roll from the wrong player',()=>{const room={players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]};const r=createRace(room,0);assert.throws(()=>roll(r,'b',{}),/Nije tvoj potez/);});
 test('all roster abilities survive randomized race simulation',()=>{for(const c of catalog){const room={players:[{id:'a',name:'A',picks:[c.id]},{id:'b',name:'B',picks:['c01']},{id:'c',name:'C',picks:['c02']}]};const r=createRace(room,0);let count=0;while(r.status==='running'&&count++<500){const next=turn(r);assert.ok(next);roll(r,next.playerId,{});}assert.notEqual(r.status,'running',`${c.name} stalled`);}});
@@ -30,7 +30,7 @@ test('the race uses PAD spaces and skips the next turn after falling',()=>{
 
 test('all character display names are Bosnian-localized',()=>{
  const {catalog}=require('../server/gameLogic');
- assert.equal(catalog.length,41);
+ assert.equal(catalog.length,40);
  assert.ok(catalog.every(c=>c.title && c.description && !/^(Lucky Roll|Iron Wall|Time Thief|Echo|Twin Souls|Oracle|Doom Bell|Jinx|Stone Walker|Underdog|Double Trouble|Bouncer|Six Collector|Perfect Pace|Desperate|Reroute|Tailwind|Risk Taker|Corner Start|Suppressor|Rival Hunter|Last Stand|Overtaker|Twin Dice|Four Hearts|Six to Start|Even Sage|Odd Sage|Fallen Hero|Penny Sprite|Quake|Puppet Master|Backward King|Magnet|Reroller|High Roller|Bridge Jumper|Mud Runner|Time Bubble|Comet)$/.test(c.name)));
 });
 
@@ -232,4 +232,113 @@ test('race roster cards open a modal with each racer ability description',()=>{
  assert.match(client,/data-ability=/);
  assert.match(client,/function showRacerAbility/);
  assert.match(client,/c\.description/);
+});
+
+
+test('Izbacivač is removed while character IDs after its former slot remain stable',()=>{
+ assert.equal(catalog.length,40);
+ assert.ok(!catalog.some(c=>c.name==='Izbacivač'));
+ assert.equal(catalog.find(c=>c.name==='Sakupljač šestica').id,'c13');
+ assert.equal(catalog.find(c=>c.name==='Pali heroj').id,'c29');
+});
+
+test('Pali heroj receives +1 to each die roll and ignores PAD',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c29']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.racers[0].position=8;r.effects={};
+ const old=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});}finally{Math.random=old;}
+ assert.equal(r.racers[0].lastNatural,2);
+ assert.equal(r.racers[0].position,10);
+ assert.equal(r.racers[0].tripped,false);
+});
+
+test('Štedljivac starts with one coin and earns one on PAD and negative tiles',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c40']},{id:'b',name:'B',picks:['c01']}]},0);
+ const x=r.racers[0];assert.equal(x.coins,1);
+ r.effects={};x.position=8;
+ const old=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});}finally{Math.random=old;}
+ assert.equal(x.position,9);assert.equal(x.tripped,true);
+ assert.equal(x.coins,3); // +1 normal turn income, +1 landing reward
+});
+
+test('Zvono propasti does not weaken its own owner',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c07']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;
+ const old=Math.random;Math.random=()=>0.5;
+ try{roll(r,'a',{});}finally{Math.random=old;}
+ assert.equal(r.racers[0].lastMove,4);
+});
+
+test('SKOK is once per race, moves two spaces and resolves the destination tile',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]},0);
+ r.effects={11:-1};r.racers[0].position=9;
+ activateAbility(r,'a','jump');
+ assert.equal(r.racers[0].position,10); // 9 + 2 lands on 11, then -1
+ assert.equal(r.racers[0].abilitiesUsed.jump,true);
+ r.turnIndex=0;assert.throws(()=>activateAbility(r,'a','jump'),/već si iskoristio/);
+});
+
+test('NAMJEŠTANJE excludes the selected die face and is single-use',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]},0);
+ activateAbility(r,'a','rig',3);
+ const old=Math.random;Math.random=()=>0.4; // index 2 of the five permitted faces => 4
+ try{roll(r,'a',{});}finally{Math.random=old;}
+ assert.notEqual(r.racers[0].lastNatural,3);
+ assert.equal(r.racers[0].abilitiesUsed.rig,true);
+ r.turnIndex=0;assert.throws(()=>activateAbility(r,'a','rig',3),/već si iskoristio/);
+});
+
+test('DUPLIKAT repeats the previous final die result exactly',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]},0);
+ const old=Math.random;Math.random=()=>0.5;
+ try{roll(r,'a',{});}finally{Math.random=old;}
+ const previous=r.racers[0].lastNatural;
+ r.turnIndex=0;
+ activateAbility(r,'a','duplicate');
+ roll(r,'a',{});
+ assert.equal(r.racers[0].lastNatural,previous);
+ assert.equal(r.racers[0].abilitiesUsed.duplicate,true);
+});
+
+
+test('race ranking compares forward and reverse racers using actual progress',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c33']},{id:'c',name:'C',picks:['c02']}]},0);
+ r.racers[0].position=8; // 8 spaces forward
+ r.racers[1].position=20; // 12 spaces toward START
+ r.racers[2].position=5;
+ assert.deepEqual(rank(r).map(x=>x.playerId),['b','a','c']);
+});
+
+
+test('a pending die-control ability cannot be stacked with another power',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]},0);
+ activateAbility(r,'a','rig',4);
+ assert.throws(()=>activateAbility(r,'a','jump'),/Prvo baci kockicu/);
+});
+
+test('NAMJEŠTANJE also blocks the selected final result for Pali heroj',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c29']},{id:'b',name:'B',picks:['c01']}]},0);
+ activateAbility(r,'a','rig',3);
+ const old=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});}finally{Math.random=old;}
+ assert.notEqual(r.racers[0].lastNatural,3);
+});
+
+test('clickable board roster cards are not blocked by the board overlay',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const client=fs.readFileSync(path.join(__dirname,'../public/game.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'../public/style.css'),'utf8');
+ assert.match(client,/document\.querySelectorAll\('\[data-ability\]'\)/);
+ assert.match(css,/\.board-center \.center-roster\{pointer-events:auto\}/);
+});
+
+
+test('Štedljivac earns the bonus coin when landing on a negative field',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c40']},{id:'b',name:'B',picks:['c01']}]},0);
+ const x=r.racers[0];x.position=9;r.effects={10:-1};
+ const old=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});}finally{Math.random=old;}
+ assert.equal(x.position,9); // lands on 10, then the -1 effect returns him to 9
+ assert.equal(x.coins,3); // starting coin + turn income + field reward
 });
