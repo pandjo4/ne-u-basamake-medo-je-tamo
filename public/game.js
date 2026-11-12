@@ -16,7 +16,7 @@ socket.on('connect',connectIdentity);socket.on('disconnect',()=>toast('Veza je p
 socket.on('state',x=>{stateQueue.push(x);processStateQueue();});
 async function processStateQueue(){
  if(animationBusy||!stateQueue.length)return;
- const next=stateQueue.shift(),prev=state,moves=[];
+ const next=stateQueue.pop(),prev=state;stateQueue.length=0;const moves=[];
  if(prev?.phase==='race'&&next?.phase==='race'&&prev.race&&next.race&&prev.race.number===next.race.number){
   for(const nr of next.race.racers){const pr=prev.race.racers.find(x=>x.playerId===nr.playerId);if(pr&&pr.position!==nr.position)moves.push({id:nr.playerId,from:visualPositions[nr.playerId]??pr.position,to:nr.position});}
  }
@@ -57,11 +57,13 @@ function renderLineup(){
  $('confirmLineupBtn').onclick=()=>emit('confirmLineup');
 }
 function coords(){const m={};for(let c=0;c<10;c++)m[c+1]=[0,c];for(let r=1;r<=6;r++)m[10+r]=[r,9];for(let c=9;c>=0;c--)m[26-c]=[7,c];for(let r=6;r>=1;r--)m[32-r+1]=[r,0];return m;}
-function renderRace(){const r=state.race;if(!r)return;const active=r.racers.find(x=>x.playerId===myId),current=r.racers.find(x=>x.playerId===r.racers[r.turnIndex]?.playerId);$('raceEyebrow').textContent=`UTRKA ${r.number} / ${state.raceCount}`;$('raceStatus').textContent=r.firstRoundComplete?'POSEBNE SPOSOBNOSTI SU AKTIVNE':`PRVA RUNDA · RUNDA ${r.round}`;
- const pos=coords(),cells=[];for(let n=1;n<=32;n++){const [row,col]=pos[n],trip=n===9||n===22,neg=r.effects[n],finish=n>=31;const pieces=r.racers.filter(x=>(visualPositions[x.playerId]??x.position)===n&&!x.eliminated).map(x=>image(x.character,'piece '+(x.tripped?'tripped ':'')+(animationBusy&&visualPositions[x.playerId]!==x.position?'moving':''))).join('');cells.push(`<div class="cell ${trip?'trip':''} ${neg?'negative':''} ${finish?'finish':''}" style="grid-row:${row+1};grid-column:${col+1}"><span class="num">${n}</span><div class="pieces">${pieces}</div>${trip?'<span class="cell-tag">PAD</span>':neg?`<span class="cell-tag">${neg}</span>`:n===31?'<span class="cell-tag">2. MJESTO</span>':n===32?'<span class="cell-tag">1. MJESTO</span>':''}</div>`);}
- $('track').innerHTML=cells.join('')+`<div class="board-center"><b>NE U BASAMAKE,<br>MEDO JE TAMO</b><div class="center-roster">${r.racers.map(x=>`<div class="center-roster-card">${image(x.character)}<small>${esc(x.playerName)}</small></div>`).join('')}</div><span>STVORENJA OVE UTRKE</span></div>`;
- const isTurn=current?.playerId===myId&&r.status==='running';$('currentTurn').innerHTML=current?`<div class="turn-player">${image(current.character)}<div><b>${esc(current.character.name)}</b><small>${esc(current.playerName)} · POLJE ${(visualPositions[current.playerId]??current.position)===0?'START':(visualPositions[current.playerId]??current.position)}</small></div></div>`:'<p>Utrka je završena.</p>';
- $('rollBtn').disabled=!isTurn||r.status!=='running'||animationBusy;$('rollBtn').textContent=isTurn?'BACI KOCKICU':'ČEKAJ POTEZ';$('die').textContent=active?.lastNatural??'?';$('rollResult').textContent=active?.lastNatural!==null&&active?.lastNatural!==undefined?`Rezultat kockice: ${active.lastNatural} · Pomjeranje: ${active.lastMove??'-'}`:(isTurn?'Tvoj potez je spreman.':'Čekamo sljedećeg takmičara...');
+function renderRace(){const r=state.race;if(!r)return;const active=r.racers.find(x=>x.playerId===myId),current=r.racers.find(x=>x.playerId===r.currentPlayerId);$('raceEyebrow').textContent=`UTRKA ${r.number} / ${state.raceCount}`;$('raceStatus').textContent=r.firstRoundComplete?'POSEBNE SPOSOBNOSTI SU AKTIVNE':`PRVA RUNDA · RUNDA ${r.round}`;
+ const pos=coords(),cells=[];for(let n=1;n<=32;n++){const [row,col]=pos[n],trip=n===9||n===22,neg=r.effects[n],finish=n>=31;const pieces=r.racers.filter(x=>(visualPositions[x.playerId]??x.position)===n&&!x.eliminated).map(x=>image(x.character,'piece '+(x.tripped?'tripped ':'')+(animationBusy&&visualPositions[x.playerId]!==x.position?'moving':''))).join('');cells.push(`<div class="cell ${trip?'trip':''} ${neg?'negative':''} ${finish?'finish':''} ${n===32?'gold-finish':''} ${n===31?'silver-finish':''}" style="grid-row:${row+1};grid-column:${col+1}"><span class="num">${n}</span><div class="pieces">${pieces}</div>${trip?'<span class="cell-tag">PAD</span>':neg?`<span class="cell-tag">${neg}</span>`:n===31?'<span class="cell-tag">2. MJESTO</span>':n===32?'<span class="cell-tag">1. MJESTO</span>':''}</div>`);}
+ $('track').innerHTML=cells.join('')+`<div class="board-center"><b>NE U BASAMAKE,<br>MEDO JE TAMO</b><div class="center-roster">${r.racers.map(x=>`<div class="center-roster-card">${image(x.character)}<small>${esc(x.character.title||x.character.name)}</small></div>`).join('')}</div><span>STVORENJA OVE UTRKE</span></div>`;
+ const isTurn=current?.playerId===myId&&r.status==='running';$('currentTurn').innerHTML=current?`<div class="turn-player">${image(current.character)}<div><b>${esc(current.character.name)}</b><small>${esc(current.playerName)} · POLJE ${(visualPositions[current.playerId]??current.position)===0?'START':(visualPositions[current.playerId]??current.position)}</small></div></div>`:(r.status==='running'?'<p>Svi aktivni takmičari su trenutno van veze. Čekamo povratak igrača.</p>':'<p>Utrka je završena.</p>');
+ $('rollBtn').disabled=!isTurn||r.status!=='running'||animationBusy;$('rollBtn').textContent=isTurn?'BACI KOCKICU':'ČEKAJ POTEZ';$('die').textContent=active?.lastNatural??'?';
+ const twoDice=active?.character?.ability==='twoDice';$('die2').hidden=!twoDice;$('die2').textContent=active?.lastSecond??'?';
+ $('rollResult').textContent=active?.lastNatural!==null&&active?.lastNatural!==undefined?`Rezultat: ${active.lastNatural}${twoDice?` i ${active.lastSecond??'?'}`:''} · Kretanje: ${active.lastMove??'-'}`:(isTurn?'Tvoj potez je spreman.':'Čekamo sljedećeg takmičara...');
  $('standings').innerHTML=[...r.racers].sort((a,b)=>a.character.ability==='reverse'?(a.position-b.position):(b.position-a.position)).map((x,i)=>`<div class="standing-row ${x.playerId===current?.playerId?'current':''}"><span class="rank">${i+1}.</span><b>${esc(x.playerName)}</b><small>${x.finished?'CILJ':x.eliminated?'ISPao':x.tripped?'PAO':`POLJE ${x.position}`} · ${x.points} BOD. · ${x.coins} NOV.</small></div>`).join('');$('raceLog').innerHTML=r.log.slice(0,10).map(s=>`<div class="log-entry">${esc(s)}</div>`).join('');
  $('raceBottom').innerHTML=r.status==='finished'?`${raceScoreTable()}<button class="primary" id="nextRaceBtn">${r.number>=state.raceCount?'PRIKAŽI KONAČNE REZULTATE':'SLJEDEĆA UTRKA ↗'}</button>`:'';if($('nextRaceBtn')){ $('nextRaceBtn').disabled=state.hostId!==myId; $('nextRaceBtn').textContent=state.hostId===myId?$('nextRaceBtn').textContent:'ČEKA SE DOMAĆIN'; $('nextRaceBtn').onclick=()=>emit('nextRace'); }
 }
@@ -87,4 +89,12 @@ $('rollBtn').onclick=()=>{
  if(enabled&&a==='double'&&!x.used.double)return ask('Dvostruka nevolja','Želiš li baciti dodatnu kockicu i sabrati rezultat?',`<select id="double"><option value="yes">Da, dodatno bacanje</option><option value="no">Ne, normalno bacanje</option></select>`);
  sendRoll(choice);
 };
-function sendRoll(choice){const d=$('die');d.classList.add('rolling');d.textContent='⚄';setTimeout(()=>d.classList.remove('rolling'),550);emit('roll',choice);}
+function sendRoll(choice){const d=$('die'),d2=$('die2');d.classList.add('rolling');d.textContent='⚄';if(state?.race?.racers.find(x=>x.playerId===myId)?.character?.ability==='twoDice'){d2.hidden=false;d2.classList.add('rolling');d2.textContent='⚄';}setTimeout(()=>{d.classList.remove('rolling');d2.classList.remove('rolling');},550);emit('roll',choice);}
+
+
+// Collection guide: all characters and their full ability descriptions.
+$('collectionBtn').onclick=()=>{
+ const cards=[...catalog].sort((a,b)=>a.name.localeCompare(b.name,'bs'));
+ $('modalContent').innerHTML=`<div class="eyebrow">VODIČ KROZ LIKOVE</div><h3>Kolekcija sposobnosti</h3><p>Pregled svih ${cards.length} šampiona. Svaka kartica prikazuje tačan efekat sposobnosti u igri.</p><div class="collection-grid">${cards.map(c=>`<article class="collection-card"><div class="collection-art">${image(c)}</div><div class="collection-copy"><h4>${esc(c.name)}</h4><b>${esc(c.title)}</b><p>${esc(c.description)}</p></div></article>`).join('')}</div>`;
+ $('modal').hidden=false;
+};

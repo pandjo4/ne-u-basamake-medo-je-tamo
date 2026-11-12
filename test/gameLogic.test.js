@@ -72,3 +72,56 @@ test('race results include player IDs for an accurate multiplayer score table',(
  const server=fs.readFileSync(path.join(__dirname,'../server/server.js'),'utf8');
  assert.match(server,/map\(x=>\(\{playerId:x\.playerId,name:x\.playerName/);
 });
+
+
+test('Corner Start begins on field 10',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c19']},{id:'b',name:'B',picks:['c01']}]};
+ const r=createRace(room,0);
+ assert.equal(r.racers[0].position,10);
+});
+test('finish fields are exclusive and second place cannot occupy first place',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']},{id:'c',name:'C',picks:['c03']}]};
+ const r=createRace(room,0);
+ const {roll}=require('../server/gameLogic');
+ r.racers[0].position=29;r.racers[1].position=30;
+ // Deterministic six: first racer wins at 32.
+ const original=Math.random;Math.random=()=>0.999999;
+ try{roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[0].position,32);
+ assert.equal(r.racers[0].finishPlace,1);
+ // Second racer now reaches/overshoots 32 but must be assigned field 31.
+ const original2=Math.random;Math.random=()=>0.999999;
+ try{roll(r,'b',{});}finally{Math.random=original2;}
+ assert.equal(r.racers[1].position,31);
+ assert.equal(r.racers[1].finishPlace,2);
+ assert.equal(r.status,'finished');
+});
+test('disconnected players are skipped instead of blocking the turn queue',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c01'],connected:false},{id:'b',name:'B',picks:['c02']},{id:'c',name:'C',picks:['c03']}]};
+ const r=createRace(room,0);
+ assert.equal(turn(r).playerId,'b');
+ const {advance}=require('../server/gameLogic');
+ advance(r);
+ assert.equal(turn(r).playerId,'b');
+ advance(r);
+ assert.equal(turn(r).playerId,'c');
+});
+test('two-dice ability stores both visible dice results',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c24']},{id:'b',name:'B',picks:['c01']}]};
+ const r=createRace(room,0);r.firstRoundComplete=true;
+ const original=Math.random;let n=0;Math.random=()=>{n++;return n===1?0.1:0.8;};
+ try{roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[0].lastNatural,1);
+ assert.equal(r.racers[0].lastSecond,5);
+});
+
+
+test('race remains resumable if every active racer temporarily disconnects',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c01'],connected:false},{id:'b',name:'B',picks:['c02'],connected:false}]};
+ const r=createRace(room,0);
+ const {advance}=require('../server/gameLogic');
+ advance(r);
+ assert.equal(r.status,'running');
+ r.racers[1].connected=true;
+ assert.equal(turn(r).playerId,'b');
+});

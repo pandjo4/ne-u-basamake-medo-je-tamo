@@ -31,4 +31,12 @@ Projekat je spreman za Node servis. `render.yaml` definiše komandu za pokretanj
 npm test
 ```
 
-Testovi pokrivaju osnovnu logiku utrka, poteze i karakteristike stvorenja.
+Testovi pokrivaju osnovnu logiku utrka, redoslijed poteza, prekid i povratak veze, ekskluzivna ciljna mjesta, početno polje Prečice i obje kockice. Trenutno prolazi svih 17 testova.
+
+## Važne dorade
+
+- Igrači koji izgube vezu preskaču se u rotaciji poteza; utrka ostaje nastavljiva ako su svi privremeno van mreže.
+- Polja 32 i 31 dodjeljuju se isključivo prvom i drugom mjestu.
+- Prečica počinje na polju 10.
+- Dvije kockice imaju odvojene prikaze i pamte oba rezultata.
+- Početna stranica sadrži Kolekciju sa opisima svih 40 sposobnosti.

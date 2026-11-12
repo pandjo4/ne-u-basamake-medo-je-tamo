@@ -55,3 +55,42 @@
 @keyframes pieceHop{0%{transform:translateY(-13px) scale(.72)}58%{transform:translateY(-5px) scale(1.13)}100%{transform:translateY(0) scale(1)}}
 .piece{animation:none}
 .piece.moving{animation:pieceHop .34s cubic-bezier(.2,.8,.25,1)}
+
+
+/* Collection guide, clearer board icons and compact dual-dice presentation */
+.collection-open{min-height:48px;padding:0 18px;border:1px solid #e9bb7055;background:#242a40;color:#f0d8aa}
+.collection-open:hover{background:#343b55;border-color:var(--gold)}
+.modal-card{max-height:min(88dvh,850px);overflow:auto;overscroll-behavior:contain}
+.collection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:18px}
+.collection-card{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;align-items:center;padding:10px;background:linear-gradient(145deg,#343b55,#24293d);border:1px solid #ffffff16;border-radius:8px;min-width:0}
+.collection-art{width:76px;height:76px;display:grid;place-items:center;background:radial-gradient(circle,#ffffff17,transparent 72%)}
+.collection-art img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 5px 5px #0009)}
+.collection-copy{min-width:0}
+.collection-copy h4{font:700 15px 'Playfair Display';margin:0 0 3px;color:#f0d8aa}
+.collection-copy b{font:9px 'DM Mono';color:#b9c5d9}
+.collection-copy p{font-size:11px;line-height:1.4;color:#c6c9d5;margin:5px 0 0}
+.dice-pair{display:flex;justify-content:center;align-items:center;gap:13px;margin-bottom:15px}
+.dice-pair .die{margin:0;width:58px;height:58px;font-size:30px}
+.die[hidden]{display:none}
+.die2{background:#dce5ed}
+.cell.gold-finish{background:linear-gradient(145deg,#a77a32,#6f4c1d);border:2px solid #f5d47d;box-shadow:inset 0 0 13px #ffe8a044,0 0 12px #e9bb7033}
+.cell.gold-finish .num,.cell.gold-finish .cell-tag{color:#fff1bd;font-weight:900}
+.cell.silver-finish{background:linear-gradient(145deg,#8795a6,#4b5668);border:2px solid #d9e2ee;box-shadow:inset 0 0 12px #ffffff38}
+.cell.silver-finish .num,.cell.silver-finish .cell-tag{color:#fff}
+.cell.trip{background:linear-gradient(145deg,#77545d,#493843);border:1px solid #d18b91;box-shadow:inset 0 0 12px #eaa2a222}
+.cell.trip .cell-tag{color:#ffd0d0;font-weight:900;letter-spacing:1px}
+.cell.negative{background:linear-gradient(145deg,#694b43,#3d3038);border:1px solid #c17c68;box-shadow:inset 0 0 12px #d98c7022}
+.cell.negative .cell-tag{color:#ffd0ad;font-weight:900}
+.cell .piece{width:clamp(17px,2.1vw,29px);height:clamp(17px,2.1vw,29px);filter:drop-shadow(0 2px 3px #000c) brightness(1.08) contrast(1.08)}
+.center-roster-card img{filter:drop-shadow(0 3px 4px #000b) brightness(1.1)}
+@media(max-width:600px){
+ .collection-open{width:100%;padding:13px}
+ .collection-grid{grid-template-columns:1fr;gap:7px}
+ .collection-card{grid-template-columns:64px minmax(0,1fr);padding:8px}
+ .collection-art,.collection-art img{width:62px;height:62px}
+ .collection-copy h4{font-size:14px}
+ .collection-copy p{font-size:10px}
+ .dice-pair{gap:9px}
+ .dice-pair .die{width:51px;height:51px;font-size:27px}
+ .cell .piece{width:clamp(15px,4vw,21px);height:clamp(15px,4vw,21px)}
+}

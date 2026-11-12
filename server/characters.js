@@ -19,7 +19,7 @@ const characters = [
  ['Preusmjerivač','Preusmjerivač','Jednom po utrci svi koji su ispred tebe dobijaju dodatno bacanje prije tvog poteza.','forcedReroll','raven','#454b68'],
  ['Vjetar u leđa','Vjetar u leđa','Ako završiš odmah iza trkača, dobijaš jedno dodatno bacanje.','following','deer','#b88b5a'],
  ['Kockar','Kockar','Dobijaš +2 kretanja, ali prirodna šestica te vraća na START.','danger','dragon','#d45a45'],
- ['Prečica','Prečica','Počinješ utrku na polju 12.','corner','minotaur','#9c704b'],
+ ['Prečica','Prečica','Počinješ utrku na polju 10.','corner','minotaur','#9c704b'],
  ['Utišivač','Utišivač','Trkači ispred tebe imaju -1 na bacanje i ne aktiviraju pasivne sposobnosti.','suppression','phantom','#59617d'],
  ['Lovac na rivale','Lovac na rivale','Dobijaš +1 na bacanje za svakog trkača ispred sebe.','rival','panther','#bf9b54'],
  ['Posljednja šansa','Posljednja šansa','Ako su svi ostali najmanje 5 polja ispred, osvajaš 3 boda i utrka se završava.','desperation','phoenix','#e58a39'],

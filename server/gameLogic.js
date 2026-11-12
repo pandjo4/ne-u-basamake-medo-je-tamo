@@ -6,7 +6,7 @@ function shuffled(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=rand(i
 function createRace(room,raceNo){
  const negatives=shuffled(Array.from({length:30},(_,i)=>i+1).filter(p=>p!==9&&p!==22)).slice(0,3);
  const effects={[negatives[0]]:-2,[negatives[1]]:-1,[negatives[2]]:-1};
- const racers=room.players.map(p=>{const ch=catalog.find(c=>c.id===p.picks[raceNo]);return {playerId:p.id,playerName:p.name,character:ch,position:ch.ability==='reverse'?32:(ch.ability==='corner'?12:0),finished:false,finishPlace:null,tripped:false,skipNext:false,eliminated:false,lives:4,coins:0,points:ch.ability==='sixPenalty'?4:0,used:{},bonusPoint:false,lastRoll:null,lastNatural:null,lastMove:null,streak:0,shield:false,extraRollAvailable:false};});
+ const racers=room.players.map(p=>{const ch=catalog.find(c=>c.id===p.picks[raceNo]);return {playerId:p.id,playerName:p.name,character:ch,position:ch.ability==='reverse'?32:(ch.ability==='corner'?10:0),connected:p.connected!==false,finished:false,finishPlace:null,tripped:false,skipNext:false,eliminated:false,lives:4,coins:0,points:ch.ability==='sixPenalty'?4:0,used:{},bonusPoint:false,lastRoll:null,lastNatural:null,lastMove:null,streak:0,shield:false,extraRollAvailable:false};});
  return {number:raceNo+1,negatives,effects,racers,turnIndex:0,round:1,roundTurns:0,firstRoundComplete:false,finishOrder:[],log:[`Utrka ${raceNo+1} počinje!`],status:'running',extraRolls:0,extraSupportGranted:false,turnToken:0};
 }
 function active(r){return !r.finished&&!r.eliminated;}
@@ -14,8 +14,18 @@ function addLog(r,s){r.log.unshift(s);r.log=r.log.slice(0,30);}
 function rank(r){return [...r.racers].sort((a,b)=> (a.character.ability==='reverse'?a.position-b.position:b.position-a.position));}
 function lastRacer(r,me){return rank(r).filter(active).filter(x=>x.playerId!==me.playerId).at(-1)||null;}
 function finish(r,x,place){if(!active(x))return; x.finished=true;x.finishPlace=place;r.finishOrder.push(x.playerId);x.points=place===1?({1:3,2:4,3:4,4:4,5:5}[r.number]||5):place===2?({1:1,2:2,3:2,4:2,5:3}[r.number]||3):0;addLog(r,`${x.character.name} završava na ${place}. mjestu!`);}
-function resolveFinish(r,x){if(x.character.ability==='reverse'){if(x.position<=0){finish(r,x,1);for(const y of r.racers)if(y!==x&&active(y)){y.finished=true;y.finishPlace=3;}r.status='finished';}return;}
- if(x.position>=32){finish(r,x,1);} else if(x.position===31){finish(r,x,2);} }
+function resolveFinish(r,x){
+ if(x.character.ability==='reverse'){
+  if(x.position<=0){finish(r,x,1);for(const y of r.racers)if(y!==x&&active(y)){y.finished=true;y.finishPlace=3;}r.status='finished';}
+  return;
+ }
+ // The finish tiles are exclusive: first place owns 32, second place owns 31.
+ if(r.finishOrder.length===0&&x.position>=32){x.position=32;finish(r,x,1);return;}
+ if(r.finishOrder.length===1&&x.position>=31){x.position=31;finish(r,x,2);return;}
+ if(r.finishOrder.length>=2){r.status='finished';return;}
+ // Before first place is claimed, field 31 is only a passage, not a finish.
+ if(r.finishOrder.length===0&&x.position>=31&&x.position<32)x.position=31;
+}
 function trip(r,x){if(x.character.ability==='ignoreTrip'||x.character.ability==='tripBoost')return;if(x.character.ability==='shield'&&!x.used.shield){x.used.shield=true;addLog(r,`${x.character.name} poništava efekat PAD.`);return;}x.tripped=true;addLog(r,`${x.character.name} je PAD! Sljedeći potez se oporavlja.`);}
 function move(r,x,delta,{backward=false,ignoreEffects=false,passing=true}={}){
  if(!active(x)||!delta)return;
@@ -31,7 +41,7 @@ function turn(r){
  for(let offset=0;offset<r.racers.length;offset++){
   const index=(r.turnIndex+offset)%r.racers.length;
   const candidate=r.racers[index];
-  if(active(candidate))return candidate;
+  if(active(candidate)&&candidate.connected!==false)return candidate;
  }
  return null;
 }
@@ -47,8 +57,9 @@ function advance(r){
    if(r.round>1)r.firstRoundComplete=true;
   }
   checked++;
- }while(checked<=r.racers.length&&!active(r.racers[r.turnIndex]));
- if(checked>r.racers.length||!turn(r))r.status='finished';
+ }while(checked<=r.racers.length&&(!active(r.racers[r.turnIndex])||r.racers[r.turnIndex].connected===false));
+ // If every remaining racer is temporarily disconnected, keep the race resumable.
+ if(checked>r.racers.length&&!r.racers.some(active))r.status='finished';
 }
 function roll(r,playerId,choice={}){
  if(r.status!=='running')throw Error('Utrka nije aktivna.');const x=turn(r);if(!x||x.playerId!==playerId)throw Error('Nije tvoj potez.');
@@ -67,7 +78,7 @@ function roll(r,playerId,choice={}){
  else if(a==='twoDice'&&enabled){natural=rand(6)+1;second=rand(6)+1;moveBy=natural===second?natural+second:Math.min(natural,second);}
  else{natural=rand(6)+1;moveBy=natural;}
  if(enabled&&natural===1){for(const y of r.racers)if(y!==x&&active(y)&&y.character.ability==='unlucky'){x.skipNext=true;y.position=Math.min(32,y.position+1);addLog(r,`${y.character.name} aktivira Urok: protivnik gubi naredni potez.`);resolveFinish(r,y);}}
- x.lastNatural=natural;x.coins++;
+ x.lastNatural=natural;x.lastSecond=second;x.coins++;
  if(a==='prediction'&&enabled&&Number(choice.predict)===natural){r.extraRolls=Math.min(1,r.extraRolls+1);addLog(r,`${x.character.name} pogađa rezultat i dobija dodatno bacanje.`);}
  if(a==='lucky'&&enabled&&natural<=2)moveBy=5;
  if(enabled&&r.racers.some(y=>y.character.ability==='weakness'))moveBy=Math.max(1,moveBy-1);

@@ -5,7 +5,7 @@ const {catalog,createRace,roll,turn,scoreRace,clone}=require('./gameLogic');
 const app=express(),server=http.createServer(app),io=new Server(server,{cors:{origin:true}});
 app.use(express.static(path.join(__dirname,'../public')));app.get('/health',(req,res)=>res.json({ok:true,game:'Ne u basamake, medo je tamo'}));
 const rooms=new Map(),socketPlayers=new Map();const code=()=>crypto.randomBytes(3).toString('hex').toUpperCase();
-function pub(room,forPlayer){const x={code:room.code,hostId:room.hostId,phase:room.phase,raceCount:room.raceCount,players:room.players.map(p=>({id:p.id,name:p.name,ready:p.ready,score:p.score,connected:p.connected,picks:p.picks,lineupConfirmed:!!p.lineupConfirmed})),draft:room.draft?{pool:room.draft.pool,order:room.draft.order,index:room.draft.index,currentPlayerId:room.draft.order[room.draft.index]?.playerId,currentRace:room.draft.order[room.draft.index]?.race}:null,race:room.race?clone(room.race):null,raceResults:room.raceResults,leaderboard:[...room.players].sort((a,b)=>b.score-a.score).map(p=>({id:p.id,name:p.name,score:p.score}))};return x;}
+function pub(room,forPlayer){const x={code:room.code,hostId:room.hostId,phase:room.phase,raceCount:room.raceCount,players:room.players.map(p=>({id:p.id,name:p.name,ready:p.ready,score:p.score,connected:p.connected,picks:p.picks,lineupConfirmed:!!p.lineupConfirmed})),draft:room.draft?{pool:room.draft.pool,order:room.draft.order,index:room.draft.index,currentPlayerId:room.draft.order[room.draft.index]?.playerId,currentRace:room.draft.order[room.draft.index]?.race}:null,race:room.race?{...clone(room.race),currentPlayerId:room.race?turn(room.race)?.playerId||null:null}:null,raceResults:room.raceResults,leaderboard:[...room.players].sort((a,b)=>b.score-a.score).map(p=>({id:p.id,name:p.name,score:p.score}))};return x;}
 function emit(room){for(const p of room.players)if(p.socketId)io.to(p.socketId).emit('state',pub(room,p.id));}
 function err(s,msg){s.emit('notice',{type:'error',message:msg});}
 function findPlayer(s){const ref=socketPlayers.get(s.id);if(!ref)return null;const room=rooms.get(ref.room);const player=room?.players.find(p=>p.id===ref.player);return room&&player?{room,player}:null;}
@@ -41,7 +41,20 @@ io.on('connection',s=>{
  s.on('nextRace',()=>{const z=findPlayer(s);if(!z)return;const {room,player}=z;if(player.id!==room.hostId)return err(s,'Samo domaćin može nastaviti.');if(room.phase!=='race'||room.race?.status!=='finished')return err(s,'Trenutna utrka još nije završena.');if(room.raceNo+1>=room.raceCount){room.phase='finished';}else{room.raceNo++;room.race=createRace(room,room.raceNo);}emit(room);});
  s.on('rematch',()=>{const z=findPlayer(s);if(!z)return;const {room,player}=z;if(player.id!==room.hostId)return err(s,'Samo domaćin može pokrenuti novi meč.');if(room.phase!=='finished')return err(s,'Meč još nije završen.');room.players.forEach(p=>{p.score=0;p.picks=[];p.ready=false;p.lineupConfirmed=false;});room.phase='lobby';room.raceNo=0;room.race=null;room.draft=null;room.raceResults=[];emit(room);});
  s.on('leaveRoom',()=>{const z=findPlayer(s);if(z){z.room.players=z.room.players.filter(p=>p.id!==z.player.id);if(!z.room.players.length)rooms.delete(z.room.code);else{if(z.room.hostId===z.player.id)z.room.hostId=z.room.players[0].id;emit(z.room);}}socketPlayers.delete(s.id);});
- s.on('disconnect',()=>{const z=findPlayer(s);if(z){z.player.connected=false;z.player.socketId=null;emit(z.room);}socketPlayers.delete(s.id);});
- s.on('reconnectRoom',({room:raw,player:id})=>{const room=rooms.get(String(raw||'').toUpperCase()),p=room?.players.find(x=>x.id===id);if(!room||!p)return err(s,'Sačuvana soba više nije dostupna.');p.socketId=s.id;p.connected=true;socketPlayers.set(s.id,{room:room.code,player:id});s.join(room.code);s.emit('identity',{room:room.code,player:id});emit(room);});
+ s.on('disconnect',()=>{
+  const z=findPlayer(s);
+  if(z){
+   z.player.connected=false;z.player.socketId=null;
+   if(z.room.race){
+    const racer=z.room.race.racers.find(x=>x.playerId===z.player.id);
+    if(racer)racer.connected=false;
+     // If the disconnected player owns the current turn, advance immediately.
+    if(z.room.race.racers[z.room.race.turnIndex]?.playerId===z.player.id)require('./gameLogic').advance(z.room.race);
+   }
+   emit(z.room);
+  }
+  socketPlayers.delete(s.id);
+ });
+ s.on('reconnectRoom',({room:raw,player:id})=>{const room=rooms.get(String(raw||'').toUpperCase()),p=room?.players.find(x=>x.id===id);if(!room||!p)return err(s,'Sačuvana soba više nije dostupna.');p.socketId=s.id;p.connected=true;if(room.race){const racer=room.race.racers.find(x=>x.playerId===p.id);if(racer)racer.connected=true;}socketPlayers.set(s.id,{room:room.code,player:id});s.join(room.code);s.emit('identity',{room:room.code,player:id});emit(room);});
 });
 const port=process.env.PORT||3000;server.listen(port,'0.0.0.0',()=>console.log(`Magical Athlete running on ${port}`));
