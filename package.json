@@ -1,8 +1,8 @@
 {
-  "name": "magical-athlete-race",
+  "name": "ne-u-basamake-medo-je-tamo",
   "version": "1.0.0",
   "private": true,
-  "description": "Authoritative multiplayer fantasy racing board game",
+  "description": "Multiplayer fantasy racing game: Ne u basamake, medo je tamo",
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",

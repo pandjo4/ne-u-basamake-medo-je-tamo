@@ -53,3 +53,22 @@ test('advancing past inactive racers increments the round only once',()=>{
  assert.equal(r.firstRoundComplete,true);
  assert.equal(turn(r).playerId,'a');
 });
+
+test('server waits for every player to confirm the lineup before creating race one',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const server=fs.readFileSync(path.join(__dirname,'../server/server.js'),'utf8');
+ assert.match(server,/room\.phase='lineup'/);
+ assert.match(server,/room\.players\.every\(p=>p\.lineupConfirmed\)/);
+ assert.match(server,/room\.phase='race';room\.raceNo=0;room\.race=createRace\(room,0\)/);
+});
+test('client animates movement in single-space increments',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const client=fs.readFileSync(path.join(__dirname,'../public/game.js'),'utf8');
+ assert.match(client,/visualPositions\[m\.id\]=cur\+\(m\.to>cur\?1:-1\)/);
+ assert.match(client,/setTimeout\(resolve,240\)/);
+});
+test('race results include player IDs for an accurate multiplayer score table',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const server=fs.readFileSync(path.join(__dirname,'../server/server.js'),'utf8');
+ assert.match(server,/map\(x=>\(\{playerId:x\.playerId,name:x\.playerName/);
+});
