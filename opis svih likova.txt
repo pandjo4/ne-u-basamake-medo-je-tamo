@@ -1,0 +1,137 @@
+MAGICAL ATHLETE — POPIS LIKOVA I NJIHOVIH SPOSOBNOSTI
+=================================================================
+Ukupno likova u rosteru: 40
+Napomena: Opisi su preuzeti iz trenutne verzije igre nakon izmjena.
+
+1. Srećna kocka -> alhemicar
+   Sposobnost: Na prirodni rezultat 1 ili 2 krećeš se 5 polja.
+
+2. Gvozdeni zid -> gljiva_gigant
+   Sposobnost: Kada staneš na polje protivnika, eliminišeš tog protivnika.
+
+3. Kradljivac vremena -> pokvareni_sat
+   Sposobnost: Prije bacanja jednom po utrci vrati posljednjeg trkača 2 polja; ti ideš 1 naprijed.
+
+4. Eho -> Usac
+   Sposobnost: Svaki put kada protivnik iskoristi dodatno bacanje, odmah se pomjeriš 2 polja naprijed.
+
+5. Blizanci duše ->  svopi
+   Sposobnost: Jednom po utrci zamijeni mjesta dva aktivna trkača.
+
+6. Proročica -> gatara
+   Sposobnost: Prije bacanja pogodi rezultat; tačan pogodak daje dodatno bacanje.
+
+7. Zvono propasti -> zvonce
+   Sposobnost: Svi ostali imaju -1 na kockici; minimum kretanja je 1.
+
+8. Urok -> beli
+   Sposobnost: Kada protivnik prirodno baci 1, preskače sljedeći potez, a ti ideš 1 naprijed.
+
+9. Kameni hodač -> cigali
+   Sposobnost: Možeš jednom po potezu izabrati fiksno kretanje 4 umjesto bacanja.
+
+10. Autsaider -> crev
+   Sposobnost: Ako si posljednji, dobijaš 1 bonus bod, najviše 2 puta po utrci.
+
+11. Dvostruka nevolja -> madjionicar
+   Sposobnost: Dva puta po utrci možeš baciti dodatnu kockicu i sabrati rezultat.
+
+12. Sakupljač šestica -> sifiz
+   Sposobnost: Počinješ utrku sa 4 bonus boda; prirodna šestica te vraća na START i oduzima 1 bod.
+
+13. Savršeni korak -> streber
+   Sposobnost: Protivnici moraju baciti tačan broj da završe; ti završavaš normalno.
+
+14. Očajnik -> frogi
+   Sposobnost: Ako si posljednji, kretanje se utrostručuje; inače se krećeš unazad.
+
+15. Preusmjerivač -> lerulele
+   Sposobnost: Kada se sposobnost aktivira, od tada do kraja utrke uvijek se krećeš +1 polje više.
+
+16. Vjetar u leđa -> sniki
+   Sposobnost: Ako završiš odmah iza trkača, dobijaš jedno dodatno bacanje.
+
+17. Kockar -> piggi_piggi
+   Sposobnost: Dobijaš +2 kretanja, ali prirodna šestica te vraća na START.
+
+18. Prečica -> var
+   Sposobnost: Počinješ utrku na polju 10.
+
+19. Utišivač -> IZBACITI IZ IGRE U POTPUNOSTI
+   Sposobnost: Trkači ispred tebe imaju -1 na bacanje i ne aktiviraju pasivne sposobnosti.
+
+20. Lovac na rivale -> nakaze
+   Sposobnost: Dobijaš +1 na bacanje za svakog trkača ispred sebe.
+
+21. Posljednja šansa -> goldar
+   Sposobnost: Ako su svi ostali najmanje 5 polja ispred, osvajaš 3 boda i utrka se završava.
+
+22. Preticač -> puzi
+   Sposobnost: Za svakog trkača kojeg pređeš dobijaš 1 bod, najviše 3 bonus boda tokom cijele utrke.
+
+23. Dvije kockice -> zakrpa
+   Sposobnost: Baci dvije: različiti rezultati znače niži broj; isti rezultati se sabiraju.
+
+24. Četiri srca -> kent
+   Sposobnost: Počinješ sa 4 života. Gubiš život samo kada protivnik stane na tvoje polje; svaki takav sudar daje ti +1 polje. Na 0 si eliminisan.
+
+25. Šestica za start -> vozzz
+   Sposobnost: Ne možeš napustiti START bez šestice; nakon toga biraš kretanje 1–5.
+
+26. Majstor parnih -> par
+   Sposobnost: Paran rezultat daje +2; neparan te pomjera 1 unazad.
+
+27. Majstor neparnih -> nepar
+   Sposobnost: Neparan rezultat daje +2; paran te pomjera 1 unazad.
+
+28. Pali heroj -> maja
+   Sposobnost: Ne gubiš potez kada staneš na PAD polje. Uz to dobijaš +1 na svako bacanje kockice 
+
+29. Kradljivac novčića -> rob_hudic
+   Sposobnost: Prirodna 1 ili 6 prebacuje jedan žeton od najbogatijeg ka najsiromašnijem.
+
+30. Potres -> bula
+   Sposobnost: Prirodna trojka obara sve ostale aktivne trkače.
+
+31. Gospodar lutaka -> vjestica
+   Sposobnost: Umjesto svog kretanja možeš pomjeriti protivnika unazad za rezultat kockice. Možeš koristiti neograničeno puta.
+
+32. Kralj unazad -> kajak
+   Sposobnost: Počinješ na cilju i krećeš se unazad; negativna polja te ubrzavaju. Dolazak na START pobjeđuje.
+
+33. Magnetno polje -> magnet
+   Sposobnost: Prije tvog bacanja svi aktivni trkači se pomjere jedno polje prema tebi.
+
+34. Ponavljač -> trap
+   Sposobnost: Jednom po potezu možeš ponoviti prirodnu 1 ili 2; drugi rezultat moraš prihvatiti.
+
+35. Visoki ulog -> traka
+   Sposobnost: Ako dva puta zaredom baciš isti broj, sljedeće kretanje je +3.
+
+36. Skakač preko prepreka -> IZBACI OVO IZ IGRE
+   Sposobnost: Preskačeš negativne efekte polja i ne aktiviraš sudare dok prolaziš preko trkača.
+
+37. Blatni trkač -> skoka
+   Sposobnost: TRIP polja te ubrzavaju 3 polja umjesto da te obore.
+
+38. Trgovac koracima -> soper_coper
+   Sposobnost: Umjesto bacanja kockice možeš platiti 1 novčić i odabrati kretanje od 1 do 8 polja.
+
+39. Štedljivac -> brk
+   Sposobnost: Počinješ sa 1 dodatnim novčićem. Kada staneš na PAD ili negativno polje (-1/-2), dobijaš 1 novčić.
+
+40. Komet ->  kofi
+   Sposobnost: Prirodna šestica daje još jedno bacanje, ali dodatno bacanje ne može lančano aktivirati ovu sposobnost.
+
+
+UNIVERZALNE AKTIVNE SPOSOBNOSTI (SVAKI IGRAČ)
+=================================================================
+1. SKOK — Jednom po utrci možeš se pomjeriti 2 polja naprijed. Polje na kojem završiš aktivira svoje efekte.
+2. NAMJEŠTANJE — Jednom po utrci izabereš broj od 1 do 6 koji ne može pasti na tvom sljedećem bacanju.
+3. DUPLIKAT — Jednom po utrci ponavljaš svoj posljednji rezultat bacanja. Dostupno tek nakon prvog bacanja.
+
+LIKOVI KOJI SU UKLONJENI
+=================================================================
+Izbacivač — uklonjen iz igre i nije dio aktivnog rostera.
+
+Ovaj dokument služi za pregled i predlaganje izmjena imena i sposobnosti.

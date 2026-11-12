@@ -1,0 +1,15 @@
+IZMJENE – POVEZIVANJE KARTICA I SLIKA
+
+- Roster je usklađen s fajlom "opis svih likova.txt".
+- Svih 38 aktivnih likova sada koristi odgovarajući PNG iz public/pictures/.
+- Ime kartice i naslov sposobnosti prikazuju novo ime izvedeno iz imena slike.
+- Utišivač i Skakač preko prepreka su uklonjeni iz rostera, kako je navedeno u tekstualnom fajlu.
+- Postojeći ID-jevi preostalih likova i njihove interne ability oznake sačuvani su radi kompatibilnosti s multiplayer tokom i postojećim izborima.
+- Sačuvani su i postojeći species/emoji fallback podaci.
+- Dodan je test koji provjerava da svih 38 likova ima jedinstven ID/ime i postojeću sliku.
+
+PROVJERA
+- npm test: 42/42 testova prolazi.
+- node --check: public/game.js, server/characters.js, server/gameLogic.js, server/server.js i test fajlovi prolaze bez sintaksnih grešaka.
+
+Napomena: izmjene su fokusirane na katalog likova, povezivanje slika i provjere. Pravila i mehanika utrke nisu namjerno mijenjana.
