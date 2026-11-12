@@ -17,6 +17,10 @@ function err(s,msg){s.emit('notice',{type:'error',message:msg});}
 function findPlayer(s){const ref=socketPlayers.get(s.id);if(!ref)return null;const room=rooms.get(ref.room);const player=room?.players.find(p=>p.id===ref.player);return room&&player?{room,player}:null;}
 function cleanName(n){return String(n||'Takmičar').trim().replace(/[<>]/g,'').slice(0,18)||'Takmičar';}
 function removePlayer(room,playerId){
+ if(room.race?.status==='running'){
+  const pending=room.race.racers.find(x=>x.playerId===playerId)?.pendingSecondChance;
+  if(pending){try{roll(room.race,playerId,{secondChance:false});}catch(e){console.warn('Could not resolve pending roll before removal:',e.message);}}
+ }
  const index=room.players.findIndex(p=>p.id===playerId);if(index<0)return null;
  const [removed]=room.players.splice(index,1);
  if(room.hostId===playerId&&room.players.length)room.hostId=room.players[0].id;
@@ -78,11 +82,16 @@ io.on('connection',s=>{
  s.on('disconnect',()=>{
   const z=findPlayer(s);
   if(z){
+   if(z.room.race?.status==='running'){
+    const racer=z.room.race.racers.find(x=>x.playerId===z.player.id);
+    // A pending Second Chance safely keeps the first server roll and completes the turn.
+    if(racer?.pendingSecondChance){try{roll(z.room.race,z.player.id,{secondChance:false});}catch(e){console.warn('Could not resolve disconnected pending roll:',e.message);}}
+   }
    z.player.connected=false;z.player.socketId=null;
    if(z.room.race){
     const racer=z.room.race.racers.find(x=>x.playerId===z.player.id);
     if(racer)racer.connected=false;
-     // If the disconnected player owns the current turn, advance immediately.
+    // If the disconnected player still owns the current turn, advance immediately.
     if(z.room.race.racers[z.room.race.turnIndex]?.playerId===z.player.id)require('./gameLogic').advance(z.room.race);
    }
    emit(z.room);

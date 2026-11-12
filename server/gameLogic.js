@@ -6,7 +6,7 @@ function shuffled(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=rand(i
 function createRace(room,raceNo){
  const negatives=shuffled(Array.from({length:30},(_,i)=>i+1).filter(p=>p!==9&&p!==22)).slice(0,3);
  const effects={[negatives[0]]:-2,[negatives[1]]:-1,[negatives[2]]:-1};
- const racers=room.players.map(p=>{const ch=catalog.find(c=>c.id===p.picks[raceNo]);return {playerId:p.id,playerName:p.name,character:ch,position:ch.ability==='reverse'?32:(ch.ability==='corner'?10:0),connected:p.connected!==false,finished:false,finishPlace:null,tripped:false,skipNext:false,eliminated:false,lives:4,coins:ch.ability==='thrifty'?1:0,points:ch.ability==='sixPenalty'?4:0,used:{},abilitiesUsed:{jump:false,rig:false,duplicate:false},pendingRollAbility:null,bonusPoint:false,bonusPointCount:0,overtakePoints:0,lastRoll:null,lastNatural:null,lastMove:null,streak:0,shield:false,extraRollAvailable:false};});
+ const racers=room.players.map(p=>{const ch=catalog.find(c=>c.id===p.picks[raceNo]),startPosition=ch.ability==='reverse'?32:(ch.ability==='corner'?10:0);return {playerId:p.id,playerName:p.name,character:ch,startPosition,position:startPosition,connected:p.connected!==false,finished:false,finishPlace:null,tripped:false,skipNext:false,eliminated:false,lives:4,coins:ch.ability==='thrifty'?1:0,points:ch.ability==='sixPenalty'?4:0,used:{},abilitiesUsed:{jump:false,rig:false,duplicate:false,thrifty:false,reset:false,secondChance:false},pendingRollAbility:null,pendingSecondChance:null,turnRolled:false,bonusPoint:false,bonusPointCount:0,overtakePoints:0,lastRoll:null,lastNatural:null,lastMove:null,streak:0,shield:false,extraRollAvailable:false};});
  return {number:raceNo+1,negatives,effects,racers,turnIndex:0,round:1,roundTurns:0,firstRoundComplete:false,finishOrder:[],log:[`Utrka ${raceNo+1} počinje!`],status:'running',extraRolls:0,extraSupportGranted:false,turnToken:0};
 }
 function active(r){return !r.finished&&!r.eliminated;}
@@ -69,7 +69,35 @@ function advance(r){
  if(checked>r.racers.length&&!r.racers.some(active))r.status='finished';
 }
 function roll(r,playerId,choice={}){
- if(r.status!=='running')throw Error('Utrka nije aktivna.');const x=turn(r);if(!x||x.playerId!==playerId)throw Error('Nije tvoj potez.');
+ if(r.status!=='running')throw Error('Utrka nije aktivna.');
+ const x=turn(r);if(!x||x.playerId!==playerId)throw Error('Nije tvoj potez.');
+ if(x.pendingSecondChance){
+  if(typeof choice.secondChance!=='boolean')throw Error('Odaberi DA ili NE za DRUGU ŠANSU.');
+  const pending=x.pendingSecondChance;let dice=pending.dice.slice();
+  if(choice.secondChance===true){
+   if(x.abilitiesUsed.secondChance)throw Error('DRUGA ŠANSA je već iskorištena.');
+   x.abilitiesUsed.secondChance=true;
+   const old=x.pendingRollAbility,a=x.character.ability,count=a==='twoDice'&&r.firstRoundComplete?2:1;
+   const one=()=>{if(old?.type==='rig'){const faces=[1,2,3,4,5,6].filter(n=>n!==old.value&&!(a==='heroBonus'&&n+1===old.value));return faces[rand(faces.length)];}return rand(6)+1;};
+   dice=Array.from({length:count},one);
+   addLog(r,`${x.character.name} koristi DRUGU ŠANSU: odbacuje prvi rezultat.`);
+  }else addLog(r,`${x.character.name} zadržava prvi rezultat kockice.`);
+  const savedChoice=pending.choice||{};x.pendingSecondChance=null;
+  return resolveRoll(r,playerId,savedChoice,dice);
+ }
+ if(x.tripped||x.skipNext)return resolveRoll(r,playerId,choice,null);
+ const a=x.character.ability;
+ const custom=(a==='paidMove'&&choice.paidMove===true)||(a==='fixed'&&choice.fixed===true)||(a==='sixStart'&&x.used.leftStart&&Number.isInteger(Number(choice.move)));
+ if(!x.abilitiesUsed?.secondChance&&!custom){
+  const pending=x.pendingRollAbility;
+  const one=()=>{if(pending?.type==='duplicate')return pending.value;if(pending?.type==='rig'){const faces=[1,2,3,4,5,6].filter(n=>n!==pending.value&&!(a==='heroBonus'&&n+1===pending.value));return faces[rand(faces.length)];}return rand(6)+1;};
+  const dice=a==='twoDice'&&r.firstRoundComplete&&pending?.type==='duplicate'?[pending.value,pending.second??pending.value]:Array.from({length:a==='twoDice'&&r.firstRoundComplete?2:1},one);
+  x.turnRolled=true;x.pendingSecondChance={dice,choice:clone(choice||{})};return;
+ }
+ return resolveRoll(r,playerId,choice,null);
+}
+function resolveRoll(r,playerId,choice={},forcedDice=null){
+ if(r.status!=='running')throw Error('Utrka nije aktivna.');const x=turn(r);if(!x||x.playerId!==playerId)throw Error('Nije tvoj potez.');x.turnRolled=true;
  if(x.tripped){x.tripped=false;addLog(r,`${x.character.name} se oporavlja i preskače potez.`);advance(r);return;}
  if(x.skipNext){x.skipNext=false;addLog(r,`${x.character.name} preskače potez.`);advance(r);return;}
  const isExtraTurn=!!x.pendingExtraTurn||!!x.extraRollAvailable;
@@ -83,11 +111,11 @@ function roll(r,playerId,choice={}){
  if(enabled&&a==='desperation'&&r.racers.filter(y=>y!==x&&active(y)).every(y=>y.position-x.position>=5)){x.points+=3;r.status='finished';addLog(r,`${x.character.name} aktivira Posljednju šansu: +3 boda!`);return;}
  let natural,second=null,moveBy;
  const pending=x.pendingRollAbility; x.pendingRollAbility=null;
- const rollDie=()=>{if(pending?.type==='rig'){const faces=[1,2,3,4,5,6].filter(n=>n!==pending.value&&!(a==='heroBonus'&&n+1===pending.value));return faces[rand(faces.length)];}if(pending?.type==='duplicate')return pending.value;return rand(6)+1;};
+ const rollDie=()=>{if(forcedDice&&forcedDice.length)return forcedDice.shift();if(pending?.type==='rig'){const faces=[1,2,3,4,5,6].filter(n=>n!==pending.value&&!(a==='heroBonus'&&n+1===pending.value));return faces[rand(faces.length)];}if(pending?.type==='duplicate')return pending.value;return rand(6)+1;};
  if(a==='paidMove'&&enabled&&choice.paidMove===true&&!pending){if(x.coins<1)throw Error('Nemaš dovoljno novčića za posebno kretanje.');x.coins--;moveBy=Math.max(1,Math.min(8,Number(choice.move)||1));natural='kupljeno';}
  else if(a==='fixed'&&enabled&&choice.fixed===true&&!pending){moveBy=4;natural='—';}
  else if(a==='sixStart'&&enabled&&x.used.leftStart&&!pending){moveBy=Math.max(1,Math.min(5,Number(choice.move)||1));natural='izbor';}
- else if(a==='twoDice'&&enabled){natural=rollDie();second=pending?.type==='duplicate'?(pending.second??null):rollDie();moveBy=second===null?natural:(natural===second?natural+second:Math.min(natural,second));}
+ else if(a==='twoDice'&&enabled){natural=rollDie();second=forcedDice&&forcedDice.length?forcedDice.shift():(pending?.type==='duplicate'?(pending.second??null):rollDie());moveBy=second===null?natural:(natural===second?natural+second:Math.min(natural,second));}
  else{natural=rollDie();if(a==='heroBonus'&&pending?.type!=='duplicate')natural+=1;moveBy=natural;}
  if(enabled&&natural===1){for(const y of r.racers)if(y!==x&&active(y)&&y.character.ability==='unlucky'){x.skipNext=true;y.position=Math.min(32,y.position+1);addLog(r,`${y.character.name} aktivira Urok: protivnik gubi naredni potez.`);resolveFinish(r,y);}}
  x.lastNatural=natural;x.lastSecond=second;if(!(a==='paidMove'&&natural==='kupljeno'))x.coins+=1;
@@ -127,10 +155,21 @@ function roll(r,playerId,choice={}){
 function activateAbility(r,playerId,type,value){
  if(r.status!=='running')throw Error('Utrka nije aktivna.');
  const x=turn(r);if(!x||x.playerId!==playerId)throw Error('Nije tvoj potez.');
- if(!['jump','rig','duplicate'].includes(type))throw Error('Nepoznata sposobnost.');
+ if(!['jump','rig','duplicate','thrifty','reset'].includes(type))throw Error('Nepoznata sposobnost.');
  if(x.abilitiesUsed?.[type])throw Error('Ovu sposobnost već si iskoristio u ovoj utrci.');
  if(x.tripped||x.skipNext)throw Error('Ne možeš aktivirati sposobnost dok preskačeš potez.');
- if(x.pendingRollAbility)throw Error('Prvo baci kockicu nakon aktiviranja prethodne sposobnosti.');
+ if(['thrifty','reset'].includes(type)&&x.turnRolled)throw Error('Ovu sposobnost možeš aktivirati samo prije bacanja kockice.');
+ if(x.pendingRollAbility||x.pendingSecondChance)throw Error('Prvo baci kockicu ili završi trenutnu odluku o kockici.');
+ if(type==='thrifty'){
+  x.abilitiesUsed.thrifty=true;x.coins++;addLog(r,`${x.character.name} aktivira ŠTEDIŠU: preskače bacanje i dobija 1 novčić.`);advance(r);return;
+ }
+ if(type==='reset'){
+  if(x.position===(x.startPosition??0))throw Error('Već se nalaziš na START polju.');
+  const position=progress(x),reward=position>=20?2:position>=10?1:0;
+  x.abilitiesUsed.reset=true;x.coins+=reward;x.position=x.startPosition??0;
+  addLog(r,`${x.character.name} aktivira RESET: vraća se na START${reward?` i dobija ${reward} novčić${reward===1?'':'a'}`:' bez novčane nagrade'}.`);
+  advance(r);return;
+ }
  if(type==='jump'){
   x.abilitiesUsed.jump=true;addLog(r,`${x.character.name} aktivira SKOK: +2 polja.`);
   move(r,x,2);advance(r);return;
