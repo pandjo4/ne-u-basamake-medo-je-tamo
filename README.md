@@ -31,7 +31,7 @@ Projekat je spreman za Node servis. `render.yaml` definiše komandu za pokretanj
 npm test
 ```
 
-Testovi pokrivaju osnovnu logiku utrka, redoslijed poteza, prekid i povratak veze, ekskluzivna ciljna mjesta, početno polje Prečice i obje kockice. Trenutno prolazi svih 17 testova.
+Testovi pokrivaju osnovnu logiku utrka, redoslijed poteza, prekid i povratak veze, ekskluzivna ciljna mjesta, početno polje Prečice i obje kockice. Trenutno prolazi svih 28 testova.
 
 ## Važne dorade
 
@@ -39,4 +39,7 @@ Testovi pokrivaju osnovnu logiku utrka, redoslijed poteza, prekid i povratak vez
 - Polja 32 i 31 dodjeljuju se isključivo prvom i drugom mjestu.
 - Prečica počinje na polju 10.
 - Dvije kockice imaju odvojene prikaze i pamte oba rezultata.
-- Početna stranica sadrži Kolekciju sa opisima svih 40 sposobnosti.
+- Igrači mogu napustiti sobu, a domaćin može ukloniti člana.
+- Tokom utrke klik na karticu lika otvara opis njegove sposobnosti.
+- Dodani su Trgovac koracima i Štedljivac; broj likova je 41.
+- Početna stranica sadrži Kolekciju sa opisima svih 41 sposobnosti.

@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const {catalog,createRace,roll,turn}=require('../server/gameLogic');
-test('roster contains 40 unique character cards',()=>{assert.equal(catalog.length,40);assert.equal(new Set(catalog.map(c=>c.id)).size,40);});
+test('roster contains 41 unique character cards',()=>{assert.equal(catalog.length,41);assert.equal(new Set(catalog.map(c=>c.id)).size,41);});
 test('race has three fixed negative spaces and two trip spaces',()=>{const room={players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]};const r=createRace(room,0);assert.equal(Object.keys(r.effects).length,3);assert.ok(![9,22].some(n=>Object.hasOwn(r.effects,n)));});
 test('server rejects a roll from the wrong player',()=>{const room={players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]};const r=createRace(room,0);assert.throws(()=>roll(r,'b',{}),/Nije tvoj potez/);});
 test('all roster abilities survive randomized race simulation',()=>{for(const c of catalog){const room={players:[{id:'a',name:'A',picks:[c.id]},{id:'b',name:'B',picks:['c01']},{id:'c',name:'C',picks:['c02']}]};const r=createRace(room,0);let count=0;while(r.status==='running'&&count++<500){const next=turn(r);assert.ok(next);roll(r,next.playerId,{});}assert.notEqual(r.status,'running',`${c.name} stalled`);}});
@@ -30,7 +30,7 @@ test('the race uses PAD spaces and skips the next turn after falling',()=>{
 
 test('all character display names are Bosnian-localized',()=>{
  const {catalog}=require('../server/gameLogic');
- assert.equal(catalog.length,40);
+ assert.equal(catalog.length,41);
  assert.ok(catalog.every(c=>c.title && c.description && !/^(Lucky Roll|Iron Wall|Time Thief|Echo|Twin Souls|Oracle|Doom Bell|Jinx|Stone Walker|Underdog|Double Trouble|Bouncer|Six Collector|Perfect Pace|Desperate|Reroute|Tailwind|Risk Taker|Corner Start|Suppressor|Rival Hunter|Last Stand|Overtaker|Twin Dice|Four Hearts|Six to Start|Even Sage|Odd Sage|Fallen Hero|Penny Sprite|Quake|Puppet Master|Backward King|Magnet|Reroller|High Roller|Bridge Jumper|Mud Runner|Time Bubble|Comet)$/.test(c.name)));
 });
 
@@ -124,4 +124,112 @@ test('race remains resumable if every active racer temporarily disconnects',()=>
  assert.equal(r.status,'running');
  r.racers[1].connected=true;
  assert.equal(turn(r).playerId,'b');
+});
+
+
+test('Gvozdeni zid eliminates a rival when its owner lands on them',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c02']},{id:'b',name:'B',picks:['c01']}]};
+ const r=createRace(room,0);r.effects={};r.firstRoundComplete=true;r.racers[0].position=4;r.racers[1].position=5;
+ const original=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[1].eliminated,true);
+});
+
+test('Četiri života loses a life only when another racer lands on its field',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c06']},{id:'b',name:'B',picks:['c25']}]};
+ const r=createRace(room,0);r.effects={};r.firstRoundComplete=true;r.racers[0].position=4;r.racers[1].position=5;
+ const original=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[1].lives,3);
+ assert.equal(r.racers[1].position,6);
+ const r2=createRace({players:[{id:'a',name:'A',picks:['c25']},{id:'b',name:'B',picks:['c01']}]},0);
+ r2.firstRoundComplete=true;r2.racers[0].position=4;r2.racers[1].position=5;
+ const original2=Math.random;Math.random=()=>0;
+ try{roll(r2,'a',{});}finally{Math.random=original2;}
+ assert.equal(r2.racers[0].lives,4);
+});
+
+test('Autsaider can earn at most two bonus points per race',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c10']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.racers[1].eliminated=true;
+ const original=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});r.turnIndex=0;roll(r,'a',{});r.turnIndex=0;roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[0].bonusPointCount,2);
+ assert.equal(r.racers[0].points,2);
+});
+
+test('Gospodar lutaka can use the ability repeatedly and falls back to movement without a target',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c32']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.effects={};r.firstRoundComplete=true;r.racers[0].position=10;r.racers[1].position=12;
+ const original=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{target:'b'});r.turnIndex=0;roll(r,'a',{target:'b'});}finally{Math.random=original;}
+ assert.equal(r.racers[1].position,10);
+ assert.equal(r.racers[0].position,10);
+ r.turnIndex=0;
+ try{Math.random=()=>0;roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[0].position,11);
+});
+
+test('Trgovac koracima spends one coin to choose movement from one to eight',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c39']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.racers[0].coins=1;r.effects={};
+ roll(r,'a',{paidMove:true,move:8});
+ assert.equal(r.racers[0].position,8);
+ assert.equal(r.racers[0].coins,0);
+});
+
+test('Dvostruka nevolja is limited to two uses, not one',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c11']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;
+ const original=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{double:true});r.turnIndex=0;roll(r,'a',{double:true});r.turnIndex=0;roll(r,'a',{double:true});}finally{Math.random=original;}
+ assert.equal(r.racers[0].used.double,2);
+});
+
+test('Preusmjerivač permanently receives plus one movement after activation',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c16']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const original=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{});r.turnIndex=0;roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[0].used.reroute,true);
+ assert.equal(r.racers[0].position,4);
+});
+
+
+test('Eho gains two spaces whenever an opponent uses an extra turn',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c06']},{id:'b',name:'B',picks:['c04']}]},0);
+ r.firstRoundComplete=true;
+ const original=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{predict:1});roll(r,'a',{predict:1});}finally{Math.random=original;}
+ assert.equal(r.racers[1].position,2);
+});
+
+test('Preticač earns no more than three bonus points across the whole race',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c23']},{id:'b',name:'B',picks:['c01']},{id:'c',name:'C',picks:['c06']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ r.racers[0].position=0;r.racers[1].position=1;r.racers[2].position=2;
+ const original=Math.random;Math.random=()=>0.999999;
+ try{roll(r,'a',{});r.turnIndex=0;r.racers[0].position=0;r.racers[1].position=1;r.racers[2].position=2;roll(r,'a',{});}finally{Math.random=original;}
+ assert.equal(r.racers[0].overtakePoints,3);
+ assert.equal(r.racers[0].points,3);
+});
+
+
+test('rooms support voluntary exit and host-controlled removal',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const server=fs.readFileSync(path.join(__dirname,'../server/server.js'),'utf8');
+ const client=fs.readFileSync(path.join(__dirname,'../public/game.js'),'utf8');
+ assert.match(server,/s\.on\('leaveRoom'/);
+ assert.match(server,/s\.on\('kickPlayer'/);
+ assert.match(server,/player\.id!==room\.hostId/);
+ assert.match(client,/leaveRoomBtn/);
+ assert.match(client,/roomKicked/);
+});
+
+test('race roster cards open a modal with each racer ability description',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const client=fs.readFileSync(path.join(__dirname,'../public/game.js'),'utf8');
+ assert.match(client,/data-ability=/);
+ assert.match(client,/function showRacerAbility/);
+ assert.match(client,/c\.description/);
 });

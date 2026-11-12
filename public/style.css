@@ -94,3 +94,16 @@
  .dice-pair .die{width:51px;height:51px;font-size:27px}
  .cell .piece{width:clamp(15px,4vw,21px);height:clamp(15px,4vw,21px)}
 }
+
+/* Room controls and in-race ability inspection */
+.leave-room-btn,.kick-player-btn{border:1px solid #d47b7955;background:#482f3b;color:#ffd0c8;border-radius:5px;padding:8px 10px;font:800 9px 'DM Mono';letter-spacing:.5px;cursor:pointer}
+.leave-room-btn:hover,.kick-player-btn:hover{background:#633b46;border-color:#df8b82}
+.kick-player-btn{margin-left:8px;padding:6px 8px;white-space:nowrap}
+.player-row{gap:9px}
+.player-meta{flex:1;min-width:0}
+.center-roster-card{cursor:pointer;color:inherit;font:inherit}
+.center-roster-card:hover{background:#4a526e;border-color:var(--gold);transform:translateY(-2px)}
+.ability-detail-art{height:130px;display:grid;place-items:center;margin:8px 0;background:radial-gradient(circle,#ffffff17,transparent 70%)}
+.ability-detail-art img{height:125px;width:125px;object-fit:contain;filter:drop-shadow(0 8px 8px #0009)}
+.ability-detail-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:12px;border-top:1px solid #ffffff1b;color:var(--gold);font:9px 'DM Mono';letter-spacing:.5px}
+@media(max-width:600px){.room-code{flex-wrap:wrap;justify-content:flex-end}.leave-room-btn{font-size:8px;padding:7px}.kick-player-btn{font-size:8px;padding:5px}}
