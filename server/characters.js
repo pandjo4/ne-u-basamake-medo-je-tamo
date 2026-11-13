@@ -2,7 +2,7 @@
 // Single source of truth for the 39 playable characters and their matching artwork.
 // Character IDs are intentionally preserved; c12 remains reserved for the previously removed Izbacivač.
 const characters = [
-  ["c42", "Orgomni bebać", "Orgomni bebać", "Niko nikada ne može biti na mom polju, osim na polju START. Ako do toga ipak dođe, trkača postavi na polje iza mene. Ne može biti pojeden od strane Gljive giganta.", "giantBaby", "ogromni_bebac", "#7bb7e8", "/pictures/ogromni_bebac.svg"],
+  ["c42", "Orgomni bebać", "Orgomni bebać", "Niko nikada ne može biti na mom polju, osim na polju START. Ako do toga ipak dođe, trkača postavi na polje iza mene. Ne može biti pojeden od strane Gljive giganta.", "giantBaby", "ogromni_bebac", "#7bb7e8", "/pictures/ogromni_bebac.png"],
   ["c01", "Alhemičar", "Alhemičar", "Na prirodni rezultat 1 ili 2 krećeš se 5 polja.", "lucky", "alhemicar", "#e87932", "/pictures/alhemicar.png"],
   ["c02", "Gljiva gigant", "Gljiva gigant", "Kada staneš na polje protivnika, eliminišeš tog protivnika.", "collision", "gljiva_gigant", "#8b929b", "/pictures/gljiva_gigant.png"],
   ["c03", "Pokvareni sat", "Pokvareni sat", "Prije bacanja jednom po utrci vrati posljednjeg trkača 2 polja; ti ideš 1 naprijed.", "lastManip", "pokvareni_sat", "#9a69c9", "/pictures/pokvareni_sat.png"],
