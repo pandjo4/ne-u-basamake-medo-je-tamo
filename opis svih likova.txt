@@ -112,7 +112,7 @@ Napomena: Opisi su preuzeti iz trenutne verzije igre nakon izmjena.
    Sposobnost: Preskačeš negativne efekte polja i ne aktiviraš sudare dok prolaziš preko trkača.
 
 37. Blatni trkač -> skoka
-   Sposobnost: TRIP polja te ubrzavaju 3 polja umjesto da te obore.
+   Sposobnost: PAD polja te ubrzavaju 3 polja umjesto da te obore.
 
 38. Šoper Čoper -> soper_coper
    Sposobnost: Kupi kocku iz šop-a: umjesto običnog bacanja možeš platiti 1 novčić i odabrati kretanje od 1 do 8 polja.

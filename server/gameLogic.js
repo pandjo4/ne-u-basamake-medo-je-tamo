@@ -169,7 +169,7 @@ function resolveRoll(r,playerId,choice={},forcedDice=null){
  if(a==='earthquake'&&enabled&&natural===3){for(const y of r.racers)if(y!==x&&active(y))trip(r,y);addLog(r,'POTRES! Svi protivnici su oboreni.');}
  if(a==='coin'&&(natural===1||natural===6)){const richest=[...r.racers].sort((p,q)=>q.coins-p.coins)[0],poorest=[...r.racers].sort((p,q)=>p.coins-q.coins)[0];if(richest&&poorest&&richest.coins>0){richest.coins--;poorest.coins++;}}
  x.lastMove=moveBy;
- if(a==='reverseControl'&&enabled&&choice.target){const target=r.racers.find(y=>y.playerId===choice.target&&active(y));if(target){target.position=Math.max(0,target.position-natural);addLog(r,`${x.character.name} pomjera protivnika unazad ${natural}.`);enforceGiantBabySpaces(r);advance(r);return;}}
+ if(a==='reverseControl'&&enabled&&choice.target&&choice.target!==x.playerId){const target=r.racers.find(y=>y.playerId===choice.target&&active(y));if(target){move(r,target,natural,{backward:true});addLog(r,`${x.character.name} vraća ${target.character.name} unazad ${natural} polje(a).`);advance(r);return;}}
  if(a==='swap'&&enabled&&!x.used.swap&&choice.swapA&&choice.swapB){const aa=r.racers.find(y=>y.playerId===choice.swapA),bb=r.racers.find(y=>y.playerId===choice.swapB);if(aa&&bb&&aa!==bb&&active(aa)&&active(bb)){[aa.position,bb.position]=[bb.position,aa.position];x.used.swap=true;addLog(r,'Dva trkača mijenjaju mjesta.');}}
  if(a==='double'&&enabled&&(x.used.double||0)<2&&choice.double){const extra=rand(6)+1;moveBy+=extra;x.used.double=(x.used.double||0)+1;addLog(r,`${x.character.name} dobija dodatnih ${extra} (${x.used.double}/2).`);}
  if(a==='reroute'&&enabled&&!x.used.reroute){x.used.reroute=true;addLog(r,`${x.character.name} aktivira trajni bonus +1 kretanje.`);}

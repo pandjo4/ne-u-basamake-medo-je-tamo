@@ -506,3 +506,34 @@ test('Svopi te swaps only two different active racers when the player opts in',(
  assert.equal(r.racers[0].used.swap,true);
  assert.notEqual(r.racers[0].position,5);
 });
+
+
+test('Vještica may choose a normal forward move instead of using her spell',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c32']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.effects={};r.racers[0].position=5;r.racers[1].position=10;
+ const old=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{target:null});roll(r,'a',{secondChance:false});}finally{Math.random=old;}
+ assert.equal(r.racers[0].position,6);
+ assert.equal(r.racers[1].position,10);
+});
+
+test('Vještica moves a reverse-direction opponent backwards in that opponent’s own direction',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c32']},{id:'b',name:'B',picks:['c33']}]},0);
+ r.firstRoundComplete=true;r.effects={};r.racers[0].position=5;r.racers[1].position=20;
+ const old=Math.random;Math.random=()=>0;
+ try{roll(r,'a',{target:'b'});roll(r,'a',{secondChance:false});}finally{Math.random=old;}
+ assert.equal(r.racers[0].position,5);
+ assert.equal(r.racers[1].position,21);
+});
+
+test('the host can close a room and the client exposes a host-only close control',()=>{
+ const server=require('node:fs').readFileSync(require('node:path').join(__dirname,'../server/server.js'),'utf8');
+ const client=require('node:fs').readFileSync(require('node:path').join(__dirname,'../public/game.js'),'utf8');
+ const html=require('node:fs').readFileSync(require('node:path').join(__dirname,'../public/index.html'),'utf8');
+ assert.match(server,/s\.on\('closeRoom'/);
+ assert.match(server,/player\.id!==room\.hostId/);
+ assert.match(server,/target\.emit\('roomClosed'\)/);
+ assert.match(client,/emit\('closeRoom'\)/);
+ assert.match(client,/socket\.on\('roomClosed'/);
+ assert.match(html,/id="closeRoomBtn"/);
+});
