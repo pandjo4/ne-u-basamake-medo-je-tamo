@@ -114,6 +114,17 @@ function roll(r,playerId,choice={}){
   const savedChoice=pending.choice||{};x.pendingSecondChance=null;
   return resolveRoll(r,playerId,savedChoice,dice);
  }
+ // Svopi's selected exchange replaces the normal roll; it is not a bonus
+ // exchange followed by an ordinary move.
+ if(x.character.ability==='swap'&&r.firstRoundComplete&&choice.swapNow===true&&!x.used.swap){
+  const aa=r.racers.find(y=>y.playerId===choice.swapA);
+  const bb=r.racers.find(y=>y.playerId===choice.swapB);
+  if(!aa||!bb||aa===bb||!active(aa)||!active(bb))throw Error('Za zamjenu izaberi dva različita aktivna trkača.');
+  [aa.position,bb.position]=[bb.position,aa.position];
+  x.used.swap=true;
+  addLog(r,`${x.character.name} mijenja pozicije ${aa.character.name} i ${bb.character.name}.`);
+  advance(r);return;
+ }
  if(x.tripped||x.skipNext)return resolveRoll(r,playerId,choice,null);
  const a=x.character.ability;
  const custom=(a==='paidMove'&&choice.paidMove===true)||(a==='fixed'&&choice.fixed===true)||(a==='sixStart'&&x.used.leftStart&&Number.isInteger(Number(choice.move)));
@@ -132,27 +143,50 @@ function resolveRoll(r,playerId,choice={},forcedDice=null){
  const isExtraTurn=!!x.pendingExtraTurn||!!x.extraRollAvailable;
  x.pendingExtraTurn=false;
  if(isExtraTurn){for(const echo of r.racers){if(echo!==x&&active(echo)&&echo.character.ability==='extraSupport'){echo.position=Math.min(32,echo.position+2);addLog(r,`${echo.character.name} odjekuje dodatno bacanje protivnika: +2 polja.`);resolveFinish(r,echo);}}x.extraRollAvailable=false;}
- const suppressed=r.firstRoundComplete&&r.racers.some(y=>y!==x&&y.character.ability==='suppression'&&y.position<x.position);const a=suppressed?'suppressed':x.character.ability;const enabled=r.firstRoundComplete;
+ const suppressed=r.firstRoundComplete&&r.racers.some(y=>y!==x&&y.character.ability==='suppression'&&progress(y)<progress(x));const a=suppressed?'suppressed':x.character.ability;const enabled=r.firstRoundComplete;
 
- if(enabled&&a==='magnet'){for(const y of r.racers)if(y!==x&&active(y)&&y.position!==x.position)y.position=Math.max(0,Math.min(32,y.position+(y.position<x.position?1:-1))); addLog(r,'Magnetno polje privlači sve trkače.');}
- if(enabled&&a==='lastManip'&&!x.used.lastManip){const l=lastRacer(r,x);if(l){l.position=Math.max(0,l.position-2);x.position=Math.min(32,x.position+1);x.used.lastManip=true;addLog(r,`${x.character.name} sabotira posljednjeg trkača.`);}}
+ if(enabled&&a==='magnet'){
+  for(const y of r.racers)if(y!==x&&active(y)){
+   const gap=progress(x)-progress(y);
+   if(gap!==0){
+    const yReverse=y.character.ability==='reverse';
+    const toward=gap>0?1:-1; // +1 means forward in race progress
+    y.position=Math.max(0,Math.min(32,y.position+toward*(yReverse?-1:1)));
+   }
+  }
+  addLog(r,'Magnetno polje privlači sve trkače.');
+ }
+ if(enabled&&a==='lastManip'&&!x.used.lastManip&&choice.useLastManip===true){const l=lastRacer(r,x);if(l){l.position=Math.max(0,l.position-2);x.position=Math.min(32,x.position+1);x.used.lastManip=true;addLog(r,`${x.character.name} sabotira posljednjeg trkača.`);}}
  if(enabled&&a==='lastPoint'&&x.bonusPointCount<2&&rank(r).filter(active).at(-1)===x){x.points++;x.bonusPointCount++;addLog(r,`${x.character.name} dobija autsajderski bod (${x.bonusPointCount}/2).`);}
- if(enabled&&a==='desperation'&&r.racers.filter(y=>y!==x&&active(y)).every(y=>y.position-x.position>=5)){x.points+=3;r.status='finished';addLog(r,`${x.character.name} aktivira Posljednju šansu: +3 boda!`);return;}
- let natural,second=null,moveBy;
+ if(a==='desperation'){
+  // Compare actual race progress, not raw board coordinates (important for reverse racers).
+  // Require at least one active rival so an empty list cannot satisfy every().
+  const rivals=r.racers.filter(y=>y!==x&&active(y));
+  if(enabled&&rivals.length>0&&rivals.every(y=>progress(y)-progress(x)>=5)){
+   x.points+=3;r.status='finished';addLog(r,`${x.character.name} aktivira Posljednju šansu: +3 boda!`);return;
+  }
+ }
+ let natural,second=null,moveBy,paidWithoutIncome=false,rolledNatural;
  const pending=x.pendingRollAbility; x.pendingRollAbility=null;
  const rollDie=()=>{if(forcedDice&&forcedDice.length)return forcedDice.shift();if(pending?.type==='rig'){const faces=[1,2,3,4,5,6].filter(n=>n!==pending.value&&!(a==='heroBonus'&&n+1===pending.value));return faces[rand(faces.length)];}if(pending?.type==='duplicate')return pending.value;return rand(6)+1;};
- if(a==='paidMove'&&enabled&&choice.paidMove===true&&!pending){if(x.coins<1)throw Error('Nemaš dovoljno novčića za posebno kretanje.');x.coins--;moveBy=Math.max(1,Math.min(8,Number(choice.move)||1));natural='kupljeno';}
- else if(a==='fixed'&&enabled&&choice.fixed===true&&!pending){moveBy=4;natural='—';}
- else if(a==='sixStart'&&x.used.leftStart&&!pending){moveBy=Math.max(1,Math.min(5,Number(choice.move)||1));natural='izbor';}
- else if(a==='twoDice'&&enabled){natural=rollDie();second=forcedDice&&forcedDice.length?forcedDice.shift():(pending?.type==='duplicate'?(pending.second??null):rollDie());moveBy=second===null?natural:(natural===second?natural+second:Math.min(natural,second));}
- else{natural=rollDie();if(a==='heroBonus'&&pending?.type!=='duplicate')natural+=1;moveBy=natural;}
- if(enabled&&natural===1){for(const y of r.racers)if(y!==x&&active(y)&&y.character.ability==='unlucky'){x.skipNext=true;y.position=Math.min(32,y.position+1);addLog(r,`${y.character.name} aktivira Urok: protivnik gubi naredni potez.`);resolveFinish(r,y);}}
- x.lastNatural=natural;x.lastSecond=second;if(!(a==='paidMove'&&natural==='kupljeno'))x.coins+=1;
+ if(a==='paidMove'&&enabled&&choice.paidMove===true&&!pending){
+   // With a positive balance the purchase consumes one coin. At zero, the
+   // purchase is still allowed and the normal +1 turn income is retained.
+   paidWithoutIncome=x.coins>0;
+   if(paidWithoutIncome)x.coins--;
+   moveBy=Math.max(1,Math.min(8,Number(choice.move)||1));natural='kupljeno';
+  }
+ else if(a==='fixed'&&enabled&&choice.fixed===true&&!pending){moveBy=4;natural='—';rolledNatural=null;}
+ else if(a==='sixStart'&&x.used.leftStart&&!pending){moveBy=Math.max(1,Math.min(5,Number(choice.move)||1));natural='izbor';rolledNatural=null;}
+ else if(a==='twoDice'&&enabled){natural=rollDie();rolledNatural=natural;second=forcedDice&&forcedDice.length?forcedDice.shift():(pending?.type==='duplicate'?(pending.second??null):rollDie());moveBy=second===null?natural:(natural===second?natural+second:Math.min(natural,second));}
+ else{natural=rollDie();rolledNatural=natural;if(a==='heroBonus'&&pending?.type!=='duplicate')natural+=1;moveBy=natural;}
+ if(enabled&&rolledNatural===1){for(const y of r.racers)if(y!==x&&active(y)&&y.character.ability==='unlucky'){x.skipNext=true;y.position=Math.min(32,y.position+1);addLog(r,`${y.character.name} aktivira Urok: protivnik gubi naredni potez.`);resolveFinish(r,y);}}
+ x.lastNatural=natural;x.lastSecond=second;if(!paidWithoutIncome)x.coins+=1;
  if(a==='prediction'&&enabled&&Number(choice.predict)===natural){r.extraRolls=Math.min(1,r.extraRolls+1);addLog(r,`${x.character.name} pogađa rezultat i dobija dodatno bacanje.`);}
  if(a==='lucky'&&enabled&&natural<=2)moveBy=5;
  if(enabled&&r.racers.some(y=>y!==x&&active(y)&&y.character.ability==='weakness'))moveBy=Math.max(1,moveBy-1);
- if(a==='rival'&&enabled)moveBy+=r.racers.filter(y=>y!==x&&active(y)&&y.position>x.position).length;
- if(enabled&&r.racers.some(y=>y!==x&&y.character.ability==='suppression'&&y.position<x.position)&&a!=='reverse')moveBy=Math.max(1,moveBy-1);
+ if(a==='rival'&&enabled)moveBy+=r.racers.filter(y=>y!==x&&active(y)&&progress(y)>progress(x)).length;
+ if(enabled&&r.racers.some(y=>y!==x&&y.character.ability==='suppression'&&progress(y)<progress(x))&&a!=='reverse')moveBy=Math.max(1,moveBy-1);
  if(a==='even'&&enabled)moveBy=natural%2===0?moveBy+2:-1;
  if(a==='odd'&&enabled)moveBy=natural%2?moveBy+2:-1;
  if(a==='desperate'&&enabled){const isLast=rank(r).filter(active).at(-1)===x;moveBy=isLast?moveBy*3:-moveBy;}
@@ -162,15 +196,15 @@ function resolveRoll(r,playerId,choice={},forcedDice=null){
  if(a==='sixPenalty'&&natural===6){x.position=0;x.points=Math.max(0,x.points-1);addLog(r,`${x.character.name} pada na START i gubi bod.`);advance(r);return;}
  if(a==='sixStart'&&!x.used.leftStart&&x.position===0){if(natural!==6){addLog(r,`${x.character.name} treba šesticu za start.`);advance(r);return;}x.used.leftStart=true;moveBy=1;}
  if(a==='reverse'&&enabled){moveBy=natural;}
- if(a==='rerollLow'&&enabled&&natural<=2&&!x.used.reroll){x.used.reroll=true;natural=rand(6)+1;moveBy=natural;addLog(r,`${x.character.name} ponavlja mali rezultat.`);}
+ if(a==='rerollLow'&&enabled&&natural<=2&&!x.used.reroll&&choice.useReroll===true){x.used.reroll=true;natural=rand(6)+1;moveBy=natural;x.lastNatural=natural;addLog(r,`${x.character.name} ponavlja mali rezultat.`);}
  if(a==='streak'&&enabled){if(x.lastRoll===natural){x.streak++;if(x.streak>=2){moveBy+=3;x.streak=0;}}else x.streak=0;x.lastRoll=natural;}
  if(a==='lives'&&enabled)moveBy+=4-x.lives;
  if(a==='sixExtra'&&enabled&&natural===6&&!x.used.sixExtra){x.used.sixExtra=true;r.extraRolls=1;}
  if(a==='earthquake'&&enabled&&natural===3){for(const y of r.racers)if(y!==x&&active(y))trip(r,y);addLog(r,'POTRES! Svi protivnici su oboreni.');}
- if(a==='coin'&&(natural===1||natural===6)){const richest=[...r.racers].sort((p,q)=>q.coins-p.coins)[0],poorest=[...r.racers].sort((p,q)=>p.coins-q.coins)[0];if(richest&&poorest&&richest.coins>0){richest.coins--;poorest.coins++;}}
+ if(a==='coin'&&(rolledNatural===1||rolledNatural===6)){const richest=[...r.racers].sort((p,q)=>q.coins-p.coins)[0],poorest=[...r.racers].sort((p,q)=>p.coins-q.coins)[0];if(richest&&poorest&&richest.coins>0){richest.coins--;poorest.coins++;}}
  x.lastMove=moveBy;
  if(a==='reverseControl'&&enabled&&choice.target&&choice.target!==x.playerId){const target=r.racers.find(y=>y.playerId===choice.target&&active(y));if(target){move(r,target,natural,{backward:true});addLog(r,`${x.character.name} vraća ${target.character.name} unazad ${natural} polje(a).`);advance(r);return;}}
- if(a==='swap'&&enabled&&!x.used.swap&&choice.swapA&&choice.swapB){const aa=r.racers.find(y=>y.playerId===choice.swapA),bb=r.racers.find(y=>y.playerId===choice.swapB);if(aa&&bb&&aa!==bb&&active(aa)&&active(bb)){[aa.position,bb.position]=[bb.position,aa.position];x.used.swap=true;addLog(r,'Dva trkača mijenjaju mjesta.');}}
+
  if(a==='double'&&enabled&&(x.used.double||0)<2&&choice.double){const extra=rand(6)+1;moveBy+=extra;x.used.double=(x.used.double||0)+1;addLog(r,`${x.character.name} dobija dodatnih ${extra} (${x.used.double}/2).`);}
  if(a==='reroute'&&enabled&&!x.used.reroute){x.used.reroute=true;addLog(r,`${x.character.name} aktivira trajni bonus +1 kretanje.`);}
  if(a==='reroute'&&enabled&&x.used.reroute)moveBy+=1;

@@ -1,0 +1,66 @@
+NUBMJT v4 - IZMJENE I PROVJERA
+
+SAZETAK IZMJENA
+1. Šoper Čoper:
+   - Kupovina kretanja od 1 do 8 polja dostupna je i kada igrač ima 0 novčića.
+   - Novčanik nikada ne ide u minus.
+   - Ako igrač kupi kretanje sa 0 novčića, dobija redovni +1 novčić za potez.
+   - Ako ima barem 1 novčić, kupovina oduzima 1 novčić kao i ranije.
+   - Modal sada prikazuje izbor i kada je stanje 0.
+
+2. Prikaz KUPLJENO:
+   - Tekst je skraćen/umanjen samo u kockici za kupljeno kretanje.
+   - Oznaka ostaje unutar polja kockice, a rezultat ispod kockice prikazuje KUPLJENO.
+
+3. Goldar:
+   - Uslov sada poredi stvarni napredak u utrci, a ne sirove koordinate table.
+   - Ovo je važno kada su među protivnicima likovi koji trče u suprotnom smjeru.
+   - Potreban je barem jedan aktivan protivnik, tako da Goldar ne aktivira pobjedu kada više nema aktivnih rivala.
+   - Aktivira se na prvom Goldarovom potezu nakon što su svi aktivni protivnici najmanje 5 polja ispred njega. Pravilo aktiviranja posebnih sposobnosti nakon prve runde ostaje nepromijenjeno.
+
+4. Svopi:
+   - Ako igrač potvrdi zamjenu, zamjena sada zauzima cijeli potez.
+   - Više ne dobija i dodatno normalno bacanje/kretanje nakon zamjene.
+   - Odbijanje zamjene i dalje omogućava običan potez.
+
+5. Pokvareni sat:
+   - Sposobnost je sada opcionalna, u skladu s opisom.
+   - Igrač može aktivirati prije bacanja ili je sačuvati za kasniji potez.
+
+6. Trap:
+   - Ponavljanje rezultata 1 ili 2 sada je opcionalno.
+   - Igrač može sačuvati jednokratnu sposobnost.
+   - Kada je iskoristi, novi rezultat se prihvata.
+   - Ispravljeno je i čuvanje posljednjeg rezultata: DUPLIKAT i prikaz rezultata sada koriste stvarni ponovljeni broj.
+
+7. Smjer kretanja:
+   - Nakaze, Magnet i provjera efekta potiskivanja koriste stvarni napredak u utrci.
+   - Obrnuti trkači više se ne računaju pogrešno samo zbog svojih koordinata na tabli.
+
+8. Prirodni rezultat kockice:
+   - Maja i dalje dobija +1 na kretanje.
+   - Taj bonus više ne mijenja prirodni rezultat koji provjeravaju sposobnosti drugih likova, npr. Belijev uslov prirodne jedinice.
+
+PROVJERA ROSTERA
+Pregledana je logika svih 39 likova i univerzalnih sposobnosti. Posebno su provjereni uslovi aktiviranja, jednokratna korištenja, dodatna bacanja, prirodni rezultati, PAD/negativna polja, smjer obrnutih trkača, sudari i završetak utrke.
+
+Likovi:
+Orgomni bebać, Alhemičar, Gljiva gigant, Pokvareni sat, Usač, Svopi, Gatara, Zvonce, Beli, Cigali, Crev, Mađioničar, Sifiz, Štreber, Frogi, Lerulele, Sniki, Piggi piggi, Var, Nakaze, Goldar, Puzi, Zakrpa, Kent, Vozzz, Par, Nepar, Maja, Rob Hudić, Bula, Vještica, Kajak, Magnet, Trap, Traka, Skoka, Šoper Čoper, Brk i Kofi.
+
+UNIVERZALNE SPOSOBNOSTI
+SKOK, NAMJEŠTANJE, DUPLIKAT, ŠTEDIŠA, RESET i DRUGA ŠANSA zadržani su i uključeni u regresionu provjeru.
+
+ŠTA NIJE MIJENJANO
+- Osnovni engine utrke i sistem poteza.
+- Socket.IO multiplayer komunikacija.
+- Kreiranje soba, povezivanje i tok igre.
+- Render konfiguracija i GitHub struktura.
+- Pravila bodovanja i osnovna struktura utrka.
+
+TESTOVI
+- node --check server/gameLogic.js: PROLAZI
+- node --check server/server.js: PROLAZI
+- node --check public/game.js: PROLAZI
+- npm test: 73/73 TESTOVA PROLAZI
+
+Napomena: izmjene su ciljane na greške i nedosljednosti u sposobnostima. Nije rađen redizajn niti zamjena core enginea.

@@ -172,3 +172,6 @@
 
 .close-room-btn{border:1px solid #d47b7955;background:#633b46;color:#ffe0da;border-radius:5px;padding:8px 10px;font:800 9px 'DM Mono';letter-spacing:.5px;cursor:pointer}.close-room-btn:hover{background:#7b414a;border-color:#e99a91}.top-actions{display:flex;align-items:center;gap:10px}.top-actions [hidden]{display:none!important}
 @media(max-width:600px){.top-actions{gap:5px}.close-room-btn,.leave-room-btn{font-size:7px;padding:7px 6px}}
+
+/* Keep the Šoper Čoper purchase label inside the die tile. */
+.die.compact-label{font-size:11px;letter-spacing:.02em;line-height:1;padding:4px;overflow:hidden;white-space:nowrap;}

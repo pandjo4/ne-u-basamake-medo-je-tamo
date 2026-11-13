@@ -502,9 +502,10 @@ test('Svopi te does not force a swap when the player declines it',()=>{
 test('Svopi te swaps only two different active racers when the player opts in',()=>{
  const r=createRace({players:[{id:'a',name:'A',picks:['c05']},{id:'b',name:'B',picks:['c01']}]},0);
  r.firstRoundComplete=true;r.effects={};r.racers[0].position=5;r.racers[1].position=12;
- xPending(r.racers[0],{swapA:'a',swapB:'b'});roll(r,'a',{secondChance:false});
+ roll(r,'a',{swapNow:true,swapA:'a',swapB:'b'});
  assert.equal(r.racers[0].used.swap,true);
- assert.notEqual(r.racers[0].position,5);
+ assert.equal(r.racers[0].position,12);
+ assert.equal(r.racers[1].position,5);
 });
 
 
@@ -536,4 +537,103 @@ test('the host can close a room and the client exposes a host-only close control
  assert.match(client,/emit\('closeRoom'\)/);
  assert.match(client,/socket\.on\('roomClosed'/);
  assert.match(html,/id="closeRoomBtn"/);
+});
+
+
+test('Šoper Čoper can buy movement at zero coins without going negative and receives the turn coin',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c39']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.racers[0].coins=0;r.effects={};
+ roll(r,'a',{paidMove:true,move:7});
+ assert.equal(r.racers[0].position,7);
+ assert.equal(r.racers[0].coins,1);
+});
+test('Goldar checks real progress and activates as soon as every active rival is five spaces ahead',()=>{
+ const r=createRace({players:[{id:'a',name:'Goldar',picks:['c22']},{id:'b',name:'Forward',picks:['c01']},{id:'c',name:'Reverse',picks:['c33']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const [goldar,forward,reverse]=r.racers;
+ goldar.position=10;forward.position=15;reverse.position=20; // reverse progress is only 12, not 20
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(r.status,'running');
+ assert.equal(goldar.points,0);
+ goldar.position=10;
+ reverse.position=14; // reverse progress 18, both rivals now >=5 ahead
+ r.turnIndex=0;
+ takeTurn(r,'a',{});
+ assert.equal(r.status,'finished');
+ assert.equal(goldar.points,3);
+ assert.match(r.log[0],/Posljednju šansu/);
+});
+test('Goldar does not trigger when no active opponents remain',()=>{
+ const r=createRace({players:[{id:'a',name:'Goldar',picks:['c22']},{id:'b',name:'Rival',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.racers[1].eliminated=true;
+ roll(r,'a',{});
+ assert.equal(r.status,'running');
+ assert.equal(r.racers[0].points,0);
+});
+
+
+test('Maja’s +1 movement bonus does not hide a natural one from Beli',()=>{
+ const r=createRace({players:[{id:'a',name:'Maja',picks:['c29']},{id:'b',name:'Beli',picks:['c08']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(r.racers[0].lastNatural,2); // displayed movement die includes Maja's +1
+ assert.equal(r.racers[0].skipNext,true);
+ assert.equal(r.racers[1].position,1);
+});
+test('Nakaze counts rivals by race progress, including a reverse-direction racer',()=>{
+ const r=createRace({players:[{id:'a',name:'Nakaze',picks:['c21']},{id:'b',name:'Kajak',picks:['c33']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ r.racers[0].position=10;r.racers[1].position=5; // Kajak progress 27, ahead despite lower board coordinate
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(r.racers[0].lastMove,2);
+});
+test('Magnet moves a reverse racer one step toward it in race-progress direction',()=>{
+ const r=createRace({players:[{id:'a',name:'Magnet',picks:['c34']},{id:'b',name:'Kajak',picks:['c33']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ r.racers[0].position=10;r.racers[1].position=5;
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(r.racers[1].position,6);
+});
+
+
+test('Svopi exchange replaces the normal roll and does not also move the player',()=>{
+ const r=createRace({players:[{id:'a',name:'Svopi',picks:['c05']},{id:'b',name:'Rival',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.effects={};r.racers[0].position=4;r.racers[1].position=12;
+ roll(r,'a',{swapNow:true,swapA:'a',swapB:'b'});
+ assert.equal(r.racers[0].position,12);
+ assert.equal(r.racers[1].position,4);
+ assert.equal(r.racers[0].lastNatural,null);
+ assert.equal(r.racers[0].used.swap,true);
+ assert.equal(turn(r).playerId,'b');
+});
+
+
+test('Pokvareni sat ability is optional and can be saved for a later turn',()=>{
+ const r=createRace({players:[{id:'a',name:'Pokvareni sat',picks:['c03']},{id:'b',name:'Rival',picks:['c01']},{id:'c',name:'Last',picks:['c02']}]},0);
+ r.firstRoundComplete=true;r.effects={};r.racers[0].position=5;r.racers[1].position=3;r.racers[2].position=1;
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{useLastManip:false});}finally{Math.random=old;}
+ assert.equal(r.racers[0].used.lastManip,undefined);
+ assert.equal(r.racers[2].position,1);
+});
+test('Pokvareni sat applies its selected pre-roll movement exactly once',()=>{
+ const r=createRace({players:[{id:'a',name:'Pokvareni sat',picks:['c03']},{id:'b',name:'Rival',picks:['c01']},{id:'c',name:'Last',picks:['c02']}]},0);
+ r.firstRoundComplete=true;r.effects={};r.racers[0].position=5;r.racers[1].position=3;r.racers[2].position=1;
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{useLastManip:true});}finally{Math.random=old;}
+ assert.equal(r.racers[0].used.lastManip,true);
+ assert.equal(r.racers[0].position,7); // +1 ability movement, then the normal one-space roll
+ assert.equal(r.racers[2].position,0);
+});
+test('Trap reroll is optional and consumes its use only when selected on a low roll',()=>{
+ const r=createRace({players:[{id:'a',name:'Trap',picks:['c35']},{id:'b',name:'Rival',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ let n=0;const old=Math.random;Math.random=()=>{n++;return n===1?0:0.5;};
+ try{takeTurn(r,'a',{useReroll:true});}finally{Math.random=old;}
+ assert.equal(r.racers[0].used.reroll,true);
+ assert.equal(r.racers[0].lastNatural,4);
 });
