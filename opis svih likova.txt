@@ -16,7 +16,7 @@ Napomena: Opisi su preuzeti iz trenutne verzije igre nakon izmjena.
    Sposobnost: Svaki put kada protivnik iskoristi dodatno bacanje, odmah se pomjeriš 2 polja naprijed.
 
 5. Blizanci duše ->  svopi
-   Sposobnost: Jednom po utrci zamijeni mjesta dva aktivna trkača.
+   Sposobnost: Jednom po utrci možeš zamijeniti mjesta dva različita aktivna trkača; zamjena je opcionalna i možeš je preskočiti.
 
 6. Proročica -> gatara
    Sposobnost: Prije bacanja pogodi rezultat; tačan pogodak daje dodatno bacanje.
@@ -76,7 +76,7 @@ Napomena: Opisi su preuzeti iz trenutne verzije igre nakon izmjena.
    Sposobnost: Počinješ sa 4 života. Gubiš život samo kada protivnik stane na tvoje polje; svaki takav sudar daje ti +1 polje. Na 0 si eliminisan.
 
 25. Šestica za start -> vozzz
-   Sposobnost: Ne možeš napustiti START bez šestice; nakon toga biraš kretanje 1–5.
+   Sposobnost: Ne možeš napustiti START bez prirodne šestice, već od prvog poteza. Nakon izlaska biraš kretanje od 1 do 5 polja.
 
 26. Majstor parnih -> par
    Sposobnost: Paran rezultat daje +2; neparan te pomjera 1 unazad.
@@ -114,8 +114,8 @@ Napomena: Opisi su preuzeti iz trenutne verzije igre nakon izmjena.
 37. Blatni trkač -> skoka
    Sposobnost: TRIP polja te ubrzavaju 3 polja umjesto da te obore.
 
-38. Trgovac koracima -> soper_coper
-   Sposobnost: Umjesto bacanja kockice možeš platiti 1 novčić i odabrati kretanje od 1 do 8 polja.
+38. Šoper Čoper -> soper_coper
+   Sposobnost: Kupi kocku iz šop-a: umjesto običnog bacanja možeš platiti 1 novčić i odabrati kretanje od 1 do 8 polja.
 
 39. Štedljivac -> brk
    Sposobnost: Počinješ sa 1 dodatnim novčićem. Kada staneš na PAD ili negativno polje (-1/-2), dobijaš 1 novčić.
@@ -135,3 +135,6 @@ LIKOVI KOJI SU UKLONJENI
 Izbacivač — uklonjen iz igre i nije dio aktivnog rostera.
 
 Ovaj dokument služi za pregled i predlaganje izmjena imena i sposobnosti.
+
+41. Orgomni bebać -> ogromni_bebac
+   Sposobnost: Niko ne može stajati na njegovom polju osim na START-u. Ako drugi trkač dođe na njegovo polje, pomjera se na polje iza njega. Ne može biti pojeden od strane Gljive giganta.

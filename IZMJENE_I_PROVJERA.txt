@@ -1,24 +1,19 @@
-DODANE UNIVERZALNE SPOSOBNOSTI
+DORADE I PROVJERA — NUBMJT v2
 
-- ŠTEDIŠA: prije bacanja preskače potez i dodjeljuje 1 novčić.
-- RESET: jednom po utrci vraća lika na njegovo početno START polje; nagrada se računa iz trenutnog napretka (0 / 1 / 2 novčića za polja 1–9 / 10–19 / 20–32). Direktno postavljanje pozicije ne aktivira efekte START polja.
-- DRUGA ŠANSA: server prvo sačuva rezultat(e) kockice i čeka DA/NE. Tek nakon odluke obračunava se kretanje, novčić i svi efekti. Kod prihvatanja server generiše novi rezultat; kod odbijanja koristi se sačuvani rezultat.
-- Podržani su i likovi s dvije kockice, kao i postojeća sposobnost DUPLIKAT.
-- Sve tri sposobnosti imaju odvojene zastavice po trkaču i resetuju se kreiranjem nove utrke.
-- Prekid veze ili napuštanje sobe tokom čekanja DRUGE ŠANSE automatski finalizira prvi sačuvani rezultat i završava potez.
-- Ponovljeni zahtjevi ne mogu aktivirati sposobnosti više puta niti promijeniti serverom generisanu kockicu.
-
-IZMIJENJENI FAJLOVI
-- server/gameLogic.js
-- server/server.js
-- public/game.js
-- public/style.css
-- test/gameLogic.test.js
+IZMJENE
+- Osvježen je izgled trkačke ploče: bogatije boje i kontrast, jasnije PAD/negativne/ciljne pločice, vidljiv START bedž, izraženiji okvir i bolji prikaz na telefonu.
+- Vozzz sada ne napušta START bez prirodne šestice već od prvog poteza. Nakon šestice izlazi na polje 1, a u svakom narednom potezu bira kretanje 1–5.
+- Šoper Čoper je pravilno lokalizovan. Modal sada objašnjava kupovinu kocke iz šop-a i prilagođen je malim ekranima; izbor običnog bacanja ostaje dostupan.
+- Svopi te više ne nameće zamjenu: igrač može izabrati DA ili NE. Server odbija zamjenu istog trkača sa samim sobom.
+- Dodat je Orgomni bebać (c42), slika /pictures/ogromni_bebac.svg. Drugi trkači ne mogu dijeliti njegovo polje osim START-a; ako dođu na njegovo polje, vraćaju se jedno polje iza njega. Gljiva gigant ga ne može eliminisati.
+- Dodani su regresioni testovi za navedene sposobnosti i provjera da se svih 39 likova učitava sa postojećom slikom.
 
 PROVJERA
 - node --check server/gameLogic.js — prolazi
 - node --check server/server.js — prolazi
 - node --check public/game.js — prolazi
-- npm test — 54/54 testova prolazi
-- HTTP health check na /health — prolazi
-- Render build/start konfiguracija ostala je nepromijenjena (npm install / npm start).
+- npm test — 60/60 testova prolazi
+- Render konfiguracija i Node/Socket.IO arhitektura nisu mijenjane.
+
+NAPOMENA
+- Nova ilustracija Orgomnog bebaća je vektorski SVG radi oštrine na svim ekranima. Naziv fajla je ogromni_bebac.svg.

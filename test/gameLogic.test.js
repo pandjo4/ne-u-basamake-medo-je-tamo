@@ -1,7 +1,8 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const {catalog,createRace,roll,turn,activateAbility,rank}=require('../server/gameLogic');
-function takeTurn(r,id,choice={}){roll(r,id,choice);const x=r.racers.find(y=>y.playerId===id);if(x?.pendingSecondChance)roll(r,id,{secondChance:false});}
-test('roster contains 38 unique playable character cards after removing the two excluded characters',()=>{assert.equal(catalog.length,38);assert.equal(new Set(catalog.map(c=>c.id)).size,38);});
+function xPending(x,choice={}){x.pendingSecondChance={dice:[4],choice};}
+function takeTurn(r,id,choice={}){const x=r.racers.find(y=>y.playerId===id);if(x?.character.ability==='sixStart'){if(!x.used.leftStart&&x.position===0){x.pendingSecondChance={dice:[6],choice:{}};roll(r,id,{secondChance:false});}else roll(r,id,{move:3});return;}roll(r,id,choice);if(x?.pendingSecondChance)roll(r,id,{secondChance:false});}
+test('roster contains 39 unique playable character cards after removing the two excluded characters',()=>{assert.equal(catalog.length,39);assert.equal(new Set(catalog.map(c=>c.id)).size,39);});
 test('race has three fixed negative spaces and two trip spaces',()=>{const room={players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]};const r=createRace(room,0);assert.equal(Object.keys(r.effects).length,3);assert.ok(![9,22].some(n=>Object.hasOwn(r.effects,n)));});
 test('server rejects a roll from the wrong player',()=>{const room={players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]};const r=createRace(room,0);assert.throws(()=>roll(r,'b',{}),/Nije tvoj potez/);});
 test('all roster abilities survive randomized race simulation',()=>{for(const c of catalog){const room={players:[{id:'a',name:'A',picks:[c.id]},{id:'b',name:'B',picks:['c01']},{id:'c',name:'C',picks:['c02']}]};const r=createRace(room,0);let count=0;while(r.status==='running'&&count++<500){const next=turn(r);assert.ok(next);takeTurn(r,next.playerId,{});}assert.notEqual(r.status,'running',`${c.name} stalled`);}});
@@ -31,7 +32,7 @@ test('the race uses PAD spaces and skips the next turn after falling',()=>{
 
 test('all character display names are Bosnian-localized',()=>{
  const {catalog}=require('../server/gameLogic');
- assert.equal(catalog.length,38);
+ assert.equal(catalog.length,39);
  assert.ok(catalog.every(c=>c.title===c.name && c.description && c.image.startsWith('/pictures/')));
 });
 
@@ -237,7 +238,7 @@ test('race roster cards open a modal with each racer ability description',()=>{
 
 
 test('removed roster entries stay absent and surviving character IDs remain stable',()=>{
- assert.equal(catalog.length,38);
+ assert.equal(catalog.length,39);
  assert.ok(!catalog.some(c=>c.ability==='suppression'||c.ability==='jump'));
  assert.equal(catalog.find(c=>c.image==='/pictures/sifiz.png').id,'c13');
  assert.equal(catalog.find(c=>c.image==='/pictures/maja.png').id,'c29');
@@ -393,8 +394,8 @@ test('DRUGA ŠANSA holds the first server die without moving or applying effects
 });
 test('declining DRUGA ŠANSA finalizes the original die and leaves the ability available',()=>{
  const r=createRace({players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]},0);
- const x=r.racers[0],old=Math.random;Math.random=()=>0;
- try{roll(r,'a',{});assert.equal(x.position,0);roll(r,'a',{secondChance:false});}finally{Math.random=old;}
+ const x=r.racers[0];r.effects={};x.pendingSecondChance={dice:[1],choice:{}};
+ roll(r,'a',{secondChance:false});
  assert.equal(x.position,1);assert.equal(x.coins,1);assert.equal(x.abilitiesUsed.secondChance,false);
 });
 test('new universal abilities are independent for each racer and cannot be double-activated',()=>{
@@ -452,4 +453,56 @@ test('race UI renders all six universal ability cards and DA/NE decision control
  const client=fs.readFileSync(path.join(__dirname,'../public/game.js'),'utf8');
  for(const label of ['SKOK','NAMJEŠTANJE','DUPLIKAT','ŠTEDIŠA','RESET','DRUGA ŠANSA'])assert.ok(client.includes(label),`missing ${label}`);
  assert.match(client,/data-second-chance="yes"/);assert.match(client,/data-second-chance="no"/);
+});
+
+
+test('Vozzz cannot leave START without a six on the very first round',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c26']},{id:'b',name:'B',picks:['c01']}]};
+ const r=createRace(room,0),v=r.racers[0];
+ v.pendingSecondChance={dice:[1],choice:{}};roll(r,'a',{secondChance:false});
+ assert.equal(v.position,0);
+ assert.equal(v.used.leftStart,undefined);
+});
+test('Vozzz leaves START on a six, then chooses a 1–5 move without a die result',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c26']},{id:'b',name:'B',picks:['c01']}]};
+ const r=createRace(room,0),v=r.racers[0];r.effects={};
+ v.pendingSecondChance={dice:[6],choice:{}};roll(r,'a',{secondChance:false});
+ assert.equal(v.position,1);assert.equal(v.used.leftStart,true);
+ r.turnIndex=0;v.turnRolled=false;
+ roll(r,'a',{move:4});
+ assert.equal(v.position,5);
+ assert.equal(v.lastNatural,'izbor');
+});
+test('Orgomni bebać displaces a racer landing on its field and is immune to Gljiva gigant',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c42']},{id:'b',name:'B',picks:['c02']}]};
+ const r=createRace(room,0),baby=r.racers[0],mushroom=r.racers[1];
+ r.effects={};baby.position=10;mushroom.position=9;
+ const {move}=require('../server/gameLogic');
+ move(r,mushroom,1);
+ assert.equal(baby.eliminated,false);
+ assert.equal(mushroom.position,9);
+ assert.match(r.log.join(' '),/imun na Gljivu giganta|čuva svoje polje/);
+});
+test('Orgomni bebać pushes a racer behind him when he moves onto an occupied field',()=>{
+ const room={players:[{id:'a',name:'A',picks:['c42']},{id:'b',name:'B',picks:['c01']}]};
+ const r=createRace(room,0),baby=r.racers[0],other=r.racers[1];
+ r.effects={};baby.position=9;other.position=11;
+ const {move}=require('../server/gameLogic');move(r,baby,2);
+ assert.equal(baby.position,11);assert.equal(other.position,10);
+});
+
+test('Svopi te does not force a swap when the player declines it',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c05']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const x=r.racers[0],before=x.position;
+ x.pendingSecondChance={dice:[4],choice:{}};roll(r,'a',{secondChance:false});
+ assert.equal(x.used.swap,undefined);
+ assert.equal(x.position,before+4);
+});
+test('Svopi te swaps only two different active racers when the player opts in',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c05']},{id:'b',name:'B',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.effects={};r.racers[0].position=5;r.racers[1].position=12;
+ xPending(r.racers[0],{swapA:'a',swapB:'b'});roll(r,'a',{secondChance:false});
+ assert.equal(r.racers[0].used.swap,true);
+ assert.notEqual(r.racers[0].position,5);
 });

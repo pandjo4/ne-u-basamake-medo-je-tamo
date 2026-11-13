@@ -119,3 +119,53 @@
 .ability-action.decision-ready{border-color:var(--mint);box-shadow:inset 0 1px #ffffff20,0 0 14px #83d9b220}
 
 .second-chance-placeholder{width:100%;min-height:25px;margin-top:3px;border:1px solid #77749a;border-radius:4px;background:#272c40;color:#aeb2c1;font:7px 'DM Mono';letter-spacing:.4px;cursor:not-allowed}
+
+
+/* Board visual refresh: richer track tiles, clearer route hierarchy and better mobile controls. */
+.board-wrap{background:radial-gradient(ellipse at 50% 45%,#303954 0%,#20263b 58%,#191e30 100%);border:1px solid #d7b87955;box-shadow:inset 0 1px #ffffff18,0 18px 42px #0005;}
+.board-topline{padding:0 2px 10px;border-bottom:1px solid #e9bb7025;color:#d7c7a5;}
+.track{padding:7px;border-radius:9px;background:linear-gradient(145deg,#161e30,#252e43);border:1px solid #ffffff16;box-shadow:inset 0 0 0 1px #0005,0 8px 20px #0003;}
+.cell{background:linear-gradient(145deg,#45516a,#303a53);border:1px solid #8e9ab055;border-radius:7px;box-shadow:inset 0 1px #ffffff25,0 3px 5px #0004;transition:filter .15s,transform .15s;}
+.cell:nth-child(3n+1){background:linear-gradient(145deg,#53627a,#35435d);}
+.cell:nth-child(3n+2){background:linear-gradient(145deg,#485b69,#2e4351);}
+.cell:nth-child(3n){background:linear-gradient(145deg,#625a71,#3c3b58);}
+.cell .num{font-size:9px;color:#e4dfd2;font-weight:700;text-shadow:0 1px 3px #000;}
+.cell .cell-tag{font-size:clamp(6px,.65vw,9px);font-weight:800;text-shadow:0 1px 3px #000;}
+.cell.trip{background:linear-gradient(145deg,#a65360,#603d53);border:1px solid #f1a4a4;box-shadow:inset 0 0 14px #ffb0b044,0 0 8px #e77c8c22;}
+.cell.negative{background:linear-gradient(145deg,#a66b48,#593e3e);border:1px solid #e9a879;box-shadow:inset 0 0 14px #ffc18b33;}
+.cell.gold-finish{background:linear-gradient(145deg,#e5b84f,#8d5c24);border:2px solid #ffe69a;}
+.cell.silver-finish{background:linear-gradient(145deg,#c2d0df,#64748a);border:2px solid #f0f5ff;}
+.cell.start{background:linear-gradient(145deg,#50b78b,#245f55);border:2px solid #a5f0c8;}
+.cell .piece{width:clamp(18px,2.35vw,32px);height:clamp(18px,2.35vw,32px);filter:drop-shadow(0 3px 3px #000b);}
+.board-center{background:radial-gradient(ellipse at center,#1d2944f2 0%,#1d2944e8 58%,#1d294400 82%);border-radius:14px;}
+.board-center b{color:#f0d39a;font-size:clamp(14px,2vw,24px);text-shadow:0 3px 12px #000;}
+.board-center .start-badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;margin:0 0 10px;border:1px solid #a5f0c8aa;border-radius:999px;background:linear-gradient(135deg,#286d5d,#1e473f);color:#d7ffe9;font:900 9px 'DM Mono';letter-spacing:1.4px;box-shadow:0 4px 15px #0005;}
+.center-roster-card{background:linear-gradient(145deg,#3e4a66,#242e45);border:1px solid #d9bb7a77;box-shadow:0 4px 12px #0006;}
+.center-roster-card:hover{border-color:#ffe3a0;box-shadow:0 0 14px #e9bb7055;}
+.board-legend{color:#d2d5df;}
+.modal{overflow-y:auto;overscroll-behavior:contain;}
+.modal-card{width:min(440px,100%);max-width:100%;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;}
+.modal-card select{display:block;max-width:100%;min-width:0;box-sizing:border-box;white-space:normal;}
+.modal-card label{display:block;color:#e9bb70;font:9px 'DM Mono';letter-spacing:.8px;margin-top:8px;}
+@media(max-width:600px){
+ .board-wrap{padding:7px;border-radius:7px;}
+ .track{gap:3px;padding:4px;min-height:340px;grid-template-rows:repeat(8,minmax(38px,1fr));}
+ .cell{border-radius:4px;}
+ .cell .num{font-size:7px;top:2px;left:3px;}
+ .cell .cell-tag{font-size:5px;letter-spacing:-.2px;}
+ .cell .piece{width:clamp(14px,4vw,21px);height:clamp(14px,4vw,21px);}
+ .board-center{padding:5px 2px;}
+ .board-center .start-badge{font-size:6px;padding:4px 6px;margin-bottom:4px;letter-spacing:.5px;}
+ .board-center b{font-size:11px;letter-spacing:.4px;}
+ .board-center>span{font-size:6px;letter-spacing:.5px;}
+ .center-roster{gap:2px;margin-top:5px;}
+ .center-roster-card{padding:2px;min-width:25px;max-width:66px;}
+ .center-roster-card img{width:20px;height:20px;}
+ .center-roster-card small{font-size:5px;max-width:44px;}
+ .modal{padding:8px;place-items:center;}
+ .modal-card{padding:19px 15px;width:100%;max-height:calc(100dvh - 16px);}
+ .modal-card h3{font-size:21px;padding-right:22px;}
+ .modal-card p{font-size:12px;}
+ .modal-card select{font-size:14px;padding:11px;width:100%;}
+ .modal-card .primary{padding:14px 12px;width:100%;}
+}

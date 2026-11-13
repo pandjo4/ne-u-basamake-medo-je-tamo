@@ -1,12 +1,13 @@
 'use strict';
-// Single source of truth for the 38 playable characters and their matching artwork.
+// Single source of truth for the 39 playable characters and their matching artwork.
 // Character IDs are intentionally preserved; c12 remains reserved for the previously removed Izbacivač.
 const characters = [
+  ["c42", "Orgomni bebać", "Orgomni bebać", "Niko nikada ne može biti na mom polju, osim na polju START. Ako do toga ipak dođe, trkača postavi na polje iza mene. Ne može biti pojeden od strane Gljive giganta.", "giantBaby", "ogromni_bebac", "#7bb7e8", "/pictures/ogromni_bebac.svg"],
   ["c01", "Alhemičar", "Alhemičar", "Na prirodni rezultat 1 ili 2 krećeš se 5 polja.", "lucky", "alhemicar", "#e87932", "/pictures/alhemicar.png"],
   ["c02", "Gljiva gigant", "Gljiva gigant", "Kada staneš na polje protivnika, eliminišeš tog protivnika.", "collision", "gljiva_gigant", "#8b929b", "/pictures/gljiva_gigant.png"],
   ["c03", "Pokvareni sat", "Pokvareni sat", "Prije bacanja jednom po utrci vrati posljednjeg trkača 2 polja; ti ideš 1 naprijed.", "lastManip", "pokvareni_sat", "#9a69c9", "/pictures/pokvareni_sat.png"],
   ["c04", "Usač", "Usač", "Svaki put kada protivnik iskoristi dodatno bacanje, odmah se pomjeriš 2 polja naprijed.", "extraSupport", "usac", "#64b5f6", "/pictures/usac.png"],
-  ["c05", "Svopi", "Svopi", "Jednom po utrci zamijeni mjesta dva aktivna trkača.", "swap", "svopi", "#df8cae", "/pictures/svopi.png"],
+  ["c05", "Svopi", "Svopi", "Jednom po utrci možeš zamijeniti mjesta dva različita aktivna trkača; zamjena nije obavezna.", "swap", "svopi", "#df8cae", "/pictures/svopi.png"],
   ["c06", "Gatara", "Gatara", "Prije bacanja pogodi rezultat; tačan pogodak daje dodatno bacanje.", "prediction", "gatara", "#b7a2e8", "/pictures/gatara.png"],
   ["c07", "Zvonce", "Zvonce", "Svi ostali imaju -1 na kockici; minimum kretanja je 1.", "weakness", "zvonce", "#c6a45c", "/pictures/zvonce.png"],
   ["c08", "Beli", "Beli", "Kada protivnik prirodno baci 1, preskače sljedeći potez, a ti ideš 1 naprijed.", "unlucky", "beli", "#6c65a8", "/pictures/beli.png"],
@@ -25,7 +26,7 @@ const characters = [
   ["c23", "Puzi", "Puzi", "Za svakog trkača kojeg pređeš dobijaš 1 bod, najviše 3 bonus boda tokom cijele utrke.", "overtake", "puzi", "#d7a34d", "/pictures/puzi.png"],
   ["c24", "Zakrpa", "Zakrpa", "Baci dvije: različiti rezultati znače niži broj; isti rezultati se sabiraju.", "twoDice", "zakrpa", "#8aab7d", "/pictures/zakrpa.png"],
   ["c25", "Kent", "Kent", "Počinješ sa 4 života. Gubiš život samo kada protivnik stane na tvoje polje; svaki takav sudar daje ti +1 polje. Na 0 si eliminisan.", "lives", "kent", "#9b795f", "/pictures/kent.png"],
-  ["c26", "Vozzz", "Vozzz", "Ne možeš napustiti START bez šestice; nakon toga biraš kretanje 1–5.", "sixStart", "vozzz", "#5d9c78", "/pictures/vozzz.png"],
+  ["c26", "Vozzz", "Vozzz", "Sa START-a možeš krenuti samo kada baciš šesticu. Nakon toga sam biraš kretanje od 1 do 5 polja.", "sixStart", "vozzz", "#5d9c78", "/pictures/vozzz.png"],
   ["c27", "Par", "Par", "Paran rezultat daje +2; neparan te pomjera 1 unazad.", "even", "par", "#8e9d9b", "/pictures/par.png"],
   ["c28", "Nepar", "Nepar", "Neparan rezultat daje +2; paran te pomjera 1 unazad.", "odd", "nepar", "#bd8d54", "/pictures/nepar.png"],
   ["c29", "Maja", "Maja", "Ne gubiš potez kada staneš na TRIP polje. Uz to dobijaš +1 na svako bacanje kockice ", "heroBonus", "maja", "#a5a5a5", "/pictures/maja.png"],
@@ -37,7 +38,7 @@ const characters = [
   ["c35", "Trap", "Trap", "Jednom po potezu možeš ponoviti prirodnu 1 ili 2; drugi rezultat moraš prihvatiti.", "rerollLow", "trap", "#78bd9a", "/pictures/trap.png"],
   ["c36", "Traka", "Traka", "Ako dva puta zaredom baciš isti broj, sljedeće kretanje je +3.", "streak", "traka", "#d8a85b", "/pictures/traka.png"],
   ["c38", "Skoka", "Skoka", "TRIP polja te ubrzavaju 2 polja umjesto da te obore.", "tripBoost", "skoka", "#9c7459", "/pictures/skoka.png"],
-  ["c39", "Soper coper", "Soper coper", "Umjesto bacanja kockice možeš platiti 1 novčić i odabrati kretanje od 1 do 8 polja.", "paidMove", "soper_coper", "#7ca8d6", "/pictures/soper_coper.png"],
+  ["c39", "Šoper Čoper", "Šoper Čoper", "Kupi kocku iz šopa: umjesto običnog bacanja možeš platiti 1 novčić i odabrati kretanje od 1 do 8 polja.", "paidMove", "soper_coper", "#7ca8d6", "/pictures/soper_coper.png"],
   ["c40", "Brk", "Brk", "Počinješ sa 1 dodatnim novčićem. Kada staneš na PAD ili negativno polje (-1/-2), dobijaš 1 novčić.", "thrifty", "brk", "#d6b45a", "/pictures/brk.png"],
   ["c41", "Kofi", "Kofi", "Prirodna šestica daje još jedno bacanje, ali dodatno bacanje ne može lančano aktivirati ovu sposobnost.", "sixExtra", "kofi", "#e28b62", "/pictures/kofi.png"],
 ];
