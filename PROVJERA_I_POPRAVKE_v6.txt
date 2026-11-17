@@ -1,0 +1,62 @@
+NUBMJT v6 — POPRAVKE I PROVJERA
+
+SAŽETAK
+Ova verzija zadržava postojeću HTML/CSS/JS + Node/Socket.IO + Render arhitekturu i postojeće ID-jeve likova. Popravke su fokusirane na obradu kretanja, red poteza i završetak utrke.
+
+POPRAVKE
+
+1. LANČANA NEGATIVNA POLJA
+- Efekti negativnih polja sada se obrađuju lančano.
+- Primjer: polje 15 ima -2, polje 13 ima -1. Slijetanje na 15 vodi na 13, aktivira -1 i završava na 12.
+- Lanac se nastavlja dok igrač ne dođe na polje bez novog negativnog efekta.
+- Uvedena je zaštita od ponovnog aktiviranja istog polja u istom kretanju.
+
+2. KRETANJE UNAZAD I NEGATIVNA POLJA
+- Negativno polje za obične trkače uvijek pomjera prema START-u (prema manjem broju polja), bez obzira na to da li je igrač do njega stigao krećući se naprijed ili nazad.
+- Kajak je izuzetak zbog obrnutog smjera utrke: negativna polja ga ubrzavaju prema njegovom cilju, odnosno prema START-u.
+- Lančani efekti rade i za Kajaka.
+
+3. ORGOMNI BEBAĆ I PAD
+- Provjera zauzetosti polja od strane Orgomnog bebaća sada se obrađuje prije PAD/negativnih efekata.
+- Ako drugi trkač pokuša stati na Bebaćevo polje, prvo se pomjera jedno polje iza njega, a zatim se obrađuju efekti tog stvarnog završnog polja.
+- Ako je Bebać na PAD polju 9 ili 22, a drugi trkač pokuša stati na njega, taj trkač se pomjera na polje iza Bebaća i ne pada zbog PAD-a na zauzetom polju.
+- Ako je polje iza Bebaća samo po sebi PAD ili negativno polje, njegov efekat se i dalje aktivira.
+- Bebać i dalje ostaje imun na Gljivu giganta.
+
+4. MAJA, PAR I NEPAR
+- Dodani su direktni testovi za Majin +1 bonus i otpornost na PAD.
+- Prirodni rezultat kockice ostaje odvojen od konačnog rezultata kretanja, tako da Beli i Rob Hudić provjeravaju prirodni broj.
+- Dodani su testovi za Par: paran rezultat +2, neparan rezultat -1.
+- Dodani su testovi za Nepar: neparan rezultat +2, paran rezultat -1.
+- Dodan je test izmjene poteza Maja → Nepar → Maja.
+- U roll/activateAbility akcijama red poteza se usklađuje sa stvarnim aktivnim igračem kojeg je odabrao turn lookup.
+
+5. STANJE POTEZA
+- `turnRolled` se sada resetuje kada igrač završi svoj potez.
+- Time se ŠTEDIŠA i RESET ponovo mogu pravilno koristiti na narednim potezima, ako još nisu iskorišteni.
+- Dodat je test za slučaj kada pokazivač poteza naiđe na nepovezanog igrača i `turn()` odabere sljedećeg povezanog igrača.
+
+6. ZAVRŠETAK UTRKE
+- Ako ostane samo jedan povezani aktivni trkač, automatski dobija preostalo mjesto i utrka se završava.
+- Ako je taj posljednji aktivni trkač privremeno nepovezan, utrka ostaje otvorena radi reconnecta.
+- Ovo sprečava beskonačnu utrku kada su ostali takmičari završili ili eliminisani.
+
+7. NOVČIĆI I ŠOPER ČOPER
+- Postojeće pravilo je zadržano: ako Šoper Čoper ima novčić, kupovina ga troši; ako ima 0, kupovina je i dalje dozvoljena i novčanik ne ide u minus.
+- Kada kupi kretanje sa 0 novčića, dobija redovni novčić za potez.
+- Brk dobija novčić za svako različito PAD/negativno polje na koje stvarno sleti tokom jednog lančanog razrješavanja.
+- Nema negativnog stanja novčića.
+
+PROVJERA
+
+- `node --check server/gameLogic.js` — PROLAZI
+- `node --check server/server.js` — PROLAZI
+- `node --check public/game.js` — PROLAZI
+- `npm test` — 93/93 TESTA PROLAZE
+- 3.900 nasumičnih simulacija utrka (svaki lik kao glavni lik, 100 simulacija) — 0 zaglavljenih utrka
+- 7.410 nasumičnih simulacija parova likova — 0 zaglavljenih utrka
+- Ukupno dodatno simulirano 11.310 utrka bez zaglavljivanja.
+- Provjereno je da svih 39 likova ima jedinstven ID, naziv, postojeću sliku i referencu sposobnosti u server logici.
+
+OGRANIČENJA PROVJERE
+Ovo su provjere izvornog koda, automatizovanih testova i simulacija game enginea. Nije moguće iz ovih testova garantovati apsolutnih 100% za svaku stvarnu mrežnu situaciju ili svaki preglednik/telefon. Nije izvršeno stvarno testiranje na Render produkcijskom serveru niti ručno testiranje dva fizička uređaja. Nakon postavljanja treba odigrati kratku multiplayer partiju, posebno provjeriti reconnect, animacije, DA/NE za DRUGU ŠANSU i poteze Maje/Nepara.

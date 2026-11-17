@@ -1,5 +1,5 @@
 'use strict';
-const test=require('node:test');const assert=require('node:assert/strict');const {catalog,createRace,roll,turn,activateAbility,rank}=require('../server/gameLogic');
+const test=require('node:test');const assert=require('node:assert/strict');const {catalog,createRace,roll,turn,advance,activateAbility,rank,move}=require('../server/gameLogic');
 function xPending(x,choice={}){x.pendingSecondChance={dice:[4],choice};}
 function takeTurn(r,id,choice={}){const x=r.racers.find(y=>y.playerId===id);if(x?.character.ability==='sixStart'){if(!x.used.leftStart&&x.position===0){x.pendingSecondChance={dice:[6],choice:{}};roll(r,id,{secondChance:false});}else roll(r,id,{move:3});return;}roll(r,id,choice);if(x?.pendingSecondChance)roll(r,id,{secondChance:false});}
 test('roster contains 39 unique playable character cards after removing the two excluded characters',()=>{assert.equal(catalog.length,39);assert.equal(new Set(catalog.map(c=>c.id)).size,39);});
@@ -153,7 +153,7 @@ test('Četiri života loses a life only when another racer lands on its field',(
 
 test('Autsaider can earn at most two bonus points per race',()=>{
  const r=createRace({players:[{id:'a',name:'A',picks:['c10']},{id:'b',name:'B',picks:['c01']}]},0);
- r.firstRoundComplete=true;r.racers[1].eliminated=true;
+ r.firstRoundComplete=true;r.racers[1].position=10;r.effects={};
  const original=Math.random;Math.random=()=>0;
  try{takeTurn(r,'a',{});r.turnIndex=0;takeTurn(r,'a',{});r.turnIndex=0;takeTurn(r,'a',{});}finally{Math.random=original;}
  assert.equal(r.racers[0].bonusPointCount,2);
@@ -342,7 +342,7 @@ test('Štedljivac earns the bonus coin when landing on a negative field',()=>{
  const old=Math.random;Math.random=()=>0;
  try{takeTurn(r,'a',{});}finally{Math.random=old;}
  assert.equal(x.position,9); // lands on 10, then the -1 effect returns him to 9
- assert.equal(x.coins,3); // starting coin + turn income + field reward
+ assert.equal(x.coins,4); // starting coin + turn income + negative field + PAD reached by the effect
 });
 
 
@@ -693,4 +693,160 @@ test('Skoka ability identifier matches the server PAD resolution branch',()=>{
  assert.match(client,/"PADBoost"/);
  assert.match(logic,/ability==='PADBoost'/);
  assert.doesNotMatch(logic,/tripBoost/);
+});
+
+
+test('negative fields resolve as a chain until the final safe field',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c01']},{id:'b',name:'B',picks:['c02']}]},0);
+ const x=r.racers[0];x.position=14;r.effects={15:-2,13:-1};
+ move(r,x,1);
+ assert.equal(x.position,12);
+ assert.match(r.log.join(' '),/nailazi na -2/);
+ assert.match(r.log.join(' '),/nailazi na -1/);
+});
+
+test('a backward-moving ordinary racer still receives the negative tile penalty toward START',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c28']},{id:'b',name:'B',picks:['c02']}]},0);
+ const x=r.racers[0];x.position=16;r.effects={15:-2,13:-1};
+ move(r,x,1,{backward:true});
+ assert.equal(x.position,12);
+});
+
+test('Kajak chains negative fields as a boost toward his own finish at START',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c33']},{id:'b',name:'B',picks:['c02']}]},0);
+ const x=r.racers[0];x.position=16;r.effects={15:-2,13:-1};
+ move(r,x,1);
+ assert.equal(x.position,12);
+ assert.equal(rank(r)[0].playerId,'a');
+});
+
+test('a racer displaced behind Orgomni bebać on a PAD does not fall on the occupied PAD',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c17']},{id:'b',name:'B',picks:['c42']}]},0);
+ const x=r.racers[0],baby=r.racers[1];
+ x.position=8;baby.position=9;r.effects={};
+ move(r,x,1);
+ assert.equal(x.position,8);
+ assert.equal(x.tripped,false);
+});
+
+test('Maja receives +1 movement and remains controllable on every roll',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c29']},{id:'b',name:'B',picks:['c28']}]},0);
+ const x=r.racers[0];x.position=10;r.firstRoundComplete=true;r.effects={};
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(x.lastNatural,2);
+ assert.equal(x.position,12);
+ assert.equal(x.tripped,false);
+});
+
+test('Par moves backward by one on odd results and forward by two bonus spaces on even results',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c27']},{id:'b',name:'B',picks:['c01']}]},0);
+ const x=r.racers[0];x.position=15;r.firstRoundComplete=true;r.effects={};
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(x.position,14);
+});
+
+test('Nepar moves forward on odd results and backward on even results',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c28']},{id:'b',name:'B',picks:['c01']}]},0);
+ const x=r.racers[0];x.position=15;r.firstRoundComplete=true;r.effects={};
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(x.position,18);
+});
+
+
+test('turn order advances from the actual connected racer selected by turn lookup',()=>{
+ const r=createRace({players:[
+  {id:'a',name:'A',picks:['c29'],connected:false},
+  {id:'b',name:'B',picks:['c28']},
+  {id:'c',name:'C',picks:['c01']}
+ ]},0);
+ r.turnIndex=0;
+ assert.equal(turn(r).playerId,'b');
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'b',{});}finally{Math.random=old;}
+ assert.equal(turn(r).playerId,'c');
+});
+
+test('pre-roll actions become available again on a racer’s next turn',()=>{
+ const r=createRace({players:[
+  {id:'a',name:'A',picks:['c01']},
+  {id:'b',name:'B',picks:['c03']}
+ ]},0);
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});takeTurn(r,'b',{});}finally{Math.random=old;}
+ assert.equal(r.racers[0].turnRolled,false);
+ assert.doesNotThrow(()=>activateAbility(r,'a','thrifty'));
+});
+
+test('Maja and Nepar alternate turns normally in a two-player race',()=>{
+ const r=createRace({players:[
+  {id:'maja-player',name:'Maja player',picks:['c29']},
+  {id:'nepar-player',name:'Nepar player',picks:['c28']}
+ ]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const old=Math.random;Math.random=()=>0;
+ try{
+  assert.equal(turn(r).playerId,'maja-player');
+  takeTurn(r,'maja-player',{});
+  assert.equal(turn(r).playerId,'nepar-player');
+  takeTurn(r,'nepar-player',{});
+  assert.equal(turn(r).playerId,'maja-player');
+ }finally{Math.random=old;}
+ assert.equal(r.racers[0].position,2);
+ assert.equal(r.racers[1].position,3);
+});
+
+
+test('every roster ability key has a corresponding server-side rule reference',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const source=fs.readFileSync(path.join(__dirname,'../server/gameLogic.js'),'utf8');
+ for(const character of catalog){
+  assert.ok(source.includes(character.ability),`${character.name}: ability ${character.ability} is not referenced by gameLogic.js`);
+ }
+});
+
+test('a fallen Orgomni bebać still blocks the PAD field and pushes Sniki behind it',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c17']},{id:'b',name:'B',picks:['c42']}]},0);
+ const sniki=r.racers[0],baby=r.racers[1];
+ sniki.position=8;baby.position=9;baby.tripped=true;r.effects={};
+ move(r,sniki,1);
+ assert.equal(sniki.position,8);
+ assert.equal(sniki.tripped,false);
+ assert.equal(baby.position,9);
+ assert.equal(baby.tripped,true);
+});
+
+test('a normal racer moving backward onto a negative field is pushed farther toward START',()=>{
+ const r=createRace({players:[{id:'a',name:'A',picks:['c28']},{id:'b',name:'B',picks:['c01']}]},0);
+ const x=r.racers[0];x.position=17;r.effects={15:-2};
+ move(r,x,2,{backward:true});
+ assert.equal(x.position,13);
+});
+
+
+test('the last connected active racer is awarded the remaining place and the race ends',()=>{
+ const r=createRace({players:[
+  {id:'a',name:'A',picks:['c01']},
+  {id:'b',name:'B',picks:['c03']}
+ ]},0);
+ const first=r.racers[0],last=r.racers[1];
+ first.finished=true;first.finishPlace=1;r.finishOrder=['a'];
+ last.position=20;
+ advance(r);
+ assert.equal(last.finished,true);
+ assert.equal(last.finishPlace,2);
+ assert.equal(r.status,'finished');
+});
+
+test('a lone disconnected racer is not auto-finished before reconnecting',()=>{
+ const r=createRace({players:[
+  {id:'a',name:'A',picks:['c01']},
+  {id:'b',name:'B',picks:['c03'],connected:false}
+ ]},0);
+ r.racers[0].eliminated=true;
+ advance(r);
+ assert.equal(r.status,'running');
+ assert.equal(r.racers[1].finished,false);
 });

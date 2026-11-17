@@ -39,37 +39,104 @@ function resolveFinish(r,x){
 function trip(r,x){if(x.character.ability==='heroBonus'||x.character.ability==='PADBoost')return;if(x.character.ability==='shield'&&!x.used.shield){x.used.shield=true;addLog(r,`${x.character.name} poništava efekat PAD.`);return;}x.tripped=true;addLog(r,`${x.character.name} je PAD! Sljedeći potez se oporavlja.`);}
 function move(r,x,delta,{backward=false,ignoreEffects=false,passing=true}={}){
  if(!active(x)||!delta)return;
- const reverse=x.character.ability==='reverse';const dir=(backward?-1:1)*(reverse?-1:1);const from=x.position;const to=Math.max(0,Math.min(32,from+dir*delta));
- if(passing&&x.character.ability==='overtake'&&!reverse){let n=r.racers.filter(y=>y!==x&&active(y)&&y.position>Math.min(from,to)&&y.position<Math.max(from,to)).length;const bonus=Math.max(0,Math.min(3-(x.overtakePoints||0),n));if(bonus){x.points+=bonus;x.overtakePoints=(x.overtakePoints||0)+bonus;addLog(r,`${x.character.name} pretječe ${n} trkača: +${bonus} boda (${x.overtakePoints}/3 ukupno).`);}}
+ const reverse=x.character.ability==='reverse';
+ const dir=(backward?-1:1)*(reverse?-1:1);
+ const from=x.position;
+ const to=Math.max(0,Math.min(32,from+dir*delta));
+
+ if(passing&&x.character.ability==='overtake'&&!reverse){
+  const n=r.racers.filter(y=>y!==x&&active(y)&&y.position>Math.min(from,to)&&y.position<Math.max(from,to)).length;
+  const bonus=Math.max(0,Math.min(3-(x.overtakePoints||0),n));
+  if(bonus){x.points+=bonus;x.overtakePoints=(x.overtakePoints||0)+bonus;addLog(r,`${x.character.name} pretječe ${n} trkača: +${bonus} boda (${x.overtakePoints}/3 ukupno).`);}
+ }
+
  x.position=to;
- if(!ignoreEffects&&x.character.ability==='thrifty'&&(to===9||to===22||Object.hasOwn(r.effects,to))){x.coins++;addLog(r,`${x.character.name} pronalazi novčić (+1).`);}
- if(!ignoreEffects&&r.effects[to]){const effect=r.effects[to];if(reverse){x.position=Math.max(0,x.position+effect);addLog(r,`${x.character.name} koristi negativno polje kao prečicu.`);}else{addLog(r,`${x.character.name} nailazi na ${effect}.`);x.position=Math.max(0,x.position+effect);}}
- if(!ignoreEffects&&!reverse&&(to===9||to===22)){if(x.character.ability==='PADBoost'){x.position=Math.min(32,x.position+2);addLog(r,`${x.character.name} izbjegava PAD i dobija +2 polja.`);}else trip(r,x);}
- if(!ignoreEffects&&!reverse){for(const y of r.racers){if(y===x||!active(y)||y.position!==x.position)continue;
-  // Orgomni bebać nikada ne dijeli polje s drugim trkačem (START je izuzetak).
-  if(x.position!==0&&(y.character.ability==='giantBaby'||x.character.ability==='giantBaby')){
-   if(y.character.ability==='giantBaby'){
+ if(ignoreEffects){resolveFinish(r,x);return;}
+
+ // Resolve the field on which the racer actually ends up. Displacement by
+ // Orgomni bebać happens before PAD/negative-field effects.
+ const visitedNegative=new Set();
+ const visitedPad=new Set();
+ const rewardedFields=new Set();
+ for(let guard=0;guard<40&&active(x);guard++){
+  let displaced=false;
+
+  for(const y of r.racers){
+   if(y===x||!active(y)||y.position!==x.position)continue;
+
+   if(x.position!==0&&(y.character.ability==='giantBaby'||x.character.ability==='giantBaby')){
+    if(y.character.ability==='giantBaby'){
+     const old=x.position;x.position=Math.max(0,y.position-1);
+     addLog(r,`${y.character.name} čuva svoje polje: ${x.character.name} je pomjeren iza njega.`);
+     displaced=x.position!==old;
+     break;
+    }
+    if(x.character.ability==='giantBaby'){
+     y.position=Math.max(0,x.position-1);
+     addLog(r,`${x.character.name} zauzima polje: ${y.character.name} je pomjeren iza njega.`);
+     continue;
+    }
+   }
+
+   if(x.character.ability==='collision'&&y.character.ability==='giantBaby'){
     x.position=Math.max(0,y.position-1);
-    addLog(r,x.character.ability==='collision'?`${y.character.name} je imun na Gljivu giganta; ${x.character.name} je pomjeren iza njega.`:`${y.character.name} čuva svoje polje: ${x.character.name} je pomjeren iza njega.`);
+    addLog(r,`${y.character.name} je imun na Gljivu giganta; napadač je pomjeren iza njega.`);
+    displaced=true;break;
+   }
+   if(x.character.ability==='collision'){
+    y.eliminated=true;
+    addLog(r,`${x.character.name} eliminiše ${y.character.name} Gvozdenim zidom.`);
     continue;
    }
-   if(x.character.ability==='giantBaby'){
-    y.position=Math.max(0,x.position-1);
-    addLog(r,`${x.character.name} zauzima polje: ${y.character.name} je pomjeren iza njega.`);
+   if(y.character.ability==='lives'){
+    y.lives--;
+    y.position=Math.min(32,y.position+1);
+    resolveFinish(r,y);
+    if(y.lives<=0){y.eliminated=true;addLog(r,`${y.character.name} je ostao bez života i eliminisan je.`);}
+    else addLog(r,`${y.character.name} gubi život (${y.lives} preostalo) i dobija +1 polje.`);
+   }
+  }
+
+  if(displaced)continue;
+
+  const field=x.position;
+  const isPad=!reverse&&(field===9||field===22);
+  const negative=!reverse&&!!r.effects[field];
+  const reverseNegative=reverse&&!!r.effects[field];
+
+  if(x.character.ability==='thrifty'&&(isPad||negative||reverseNegative)&&!rewardedFields.has(field)){
+   rewardedFields.add(field);x.coins++;addLog(r,`${x.character.name} pronalazi novčić (+1).`);
+  }
+
+  // A negative tile always pushes toward START for ordinary racers.
+  // Kajak's reverse race direction makes the same negative effect a forward
+  // boost toward his own finish (START).
+  if(negative||reverseNegative){
+   if(!visitedNegative.has(field)){
+    visitedNegative.add(field);
+    const effect=r.effects[field];
+    x.position=Math.max(0,Math.min(32,x.position+effect));
+    addLog(r,`${x.character.name} nailazi na ${effect}${reverse?' i koristi ga kao prečicu':''}.`);
     continue;
    }
   }
-  // Gljiva gigant ne može eliminisati Orgomnog bebaća.
-  if(x.character.ability==='collision'&&y.character.ability==='giantBaby'){
-   x.position=Math.max(0,y.position-1);
-   addLog(r,`${y.character.name} je imun na Gljivu giganta; napadač je pomjeren iza njega.`);
-   continue;
+
+  if(isPad&&!visitedPad.has(field)){
+   visitedPad.add(field);
+   if(x.character.ability==='heroBonus'){
+    addLog(r,`${x.character.name} ignoriše PAD.`);
+   }else if(x.character.ability==='PADBoost'){
+    x.position=Math.min(32,x.position+2);
+    addLog(r,`${x.character.name} izbjegava PAD i dobija +2 polja.`);
+    continue;
+   }else{
+    trip(r,x);
+    break;
+   }
   }
-  // Gvozdeni zid eliminiše protivnika kojeg njegov vlasnik pregazi.
-  if(x.character.ability==='collision'){y.eliminated=true;addLog(r,`${x.character.name} eliminiše ${y.character.name} Gvozdenim zidom.`);continue;}
-  // Četiri života reaguje samo kada neko drugi stane na polje ovog lika.
-  if(y.character.ability==='lives'){y.lives--;y.position=Math.min(32,y.position+1);resolveFinish(r,y);if(y.lives<=0){y.eliminated=true;addLog(r,`${y.character.name} je ostao bez života i eliminisan je.`);}else addLog(r,`${y.character.name} gubi život (${y.lives} preostalo) i dobija +1 polje.`);}
- }}
+
+  break;
+ }
  enforceGiantBabySpaces(r);
  resolveFinish(r,x);
 }
@@ -83,7 +150,18 @@ function turn(r){
 }
 function advance(r){
  if(r.status!=='running')return;
- if(r.finishOrder.length>=2||r.racers.every(x=>!active(x))){r.status='finished';return;}
+ // A completed turn is over; pre-roll actions become available again next turn.
+ const outgoing=r.racers[r.turnIndex];
+ if(outgoing)outgoing.turnRolled=false;
+ const remaining=r.racers.filter(active);
+ if(r.finishOrder.length>=2||remaining.length===0){r.status='finished';return;}
+ // If only one connected racer remains, award the next place automatically.
+ // A lone disconnected racer is kept in the race so they can reconnect.
+ if(remaining.length===1&&remaining[0].connected!==false){
+  finish(r,remaining[0],r.finishOrder.length+1);
+  r.status='finished';
+  return;
+ }
  let checked=0;
  do{
   r.turnIndex++;
@@ -100,6 +178,7 @@ function advance(r){
 function roll(r,playerId,choice={}){
  if(r.status!=='running')throw Error('Utrka nije aktivna.');
  const x=turn(r);if(!x||x.playerId!==playerId)throw Error('Nije tvoj potez.');
+ r.turnIndex=r.racers.indexOf(x);
  if(x.pendingSecondChance){
   if(typeof choice.secondChance!=='boolean')throw Error('Odaberi DA ili NE za DRUGU ŠANSU.');
   const pending=x.pendingSecondChance;let dice=pending.dice.slice();
@@ -217,6 +296,7 @@ function resolveRoll(r,playerId,choice={},forcedDice=null){
 function activateAbility(r,playerId,type,value){
  if(r.status!=='running')throw Error('Utrka nije aktivna.');
  const x=turn(r);if(!x||x.playerId!==playerId)throw Error('Nije tvoj potez.');
+ r.turnIndex=r.racers.indexOf(x);
  if(!['jump','rig','duplicate','thrifty','reset'].includes(type))throw Error('Nepoznata sposobnost.');
  if(x.abilitiesUsed?.[type])throw Error('Ovu sposobnost već si iskoristio u ovoj utrci.');
  if(x.tripped||x.skipNext)throw Error('Ne možeš aktivirati sposobnost dok preskačeš potez.');
