@@ -565,7 +565,7 @@ test('Goldar checks real progress and activates as soon as every active rival is
  assert.match(r.log[0],/Posljednju šansu/);
 });
 test('Goldar does not trigger when no active opponents remain',()=>{
- const r=createRace({players:[{id:'a',name:'Goldar',picks:['c22']},{id:'b',name:'Rival',picks:['c01']}]},0);
+ const r=createRace({players:[{id:'a',name:'Goldar',picks:['c22']},{id:'b',name:'Rival',picks:['c03']}]},0);
  r.firstRoundComplete=true;r.racers[1].eliminated=true;
  roll(r,'a',{});
  assert.equal(r.status,'running');
@@ -636,4 +636,61 @@ test('Trap reroll is optional and consumes its use only when selected on a low r
  try{takeTurn(r,'a',{useReroll:true});}finally{Math.random=old;}
  assert.equal(r.racers[0].used.reroll,true);
  assert.equal(r.racers[0].lastNatural,4);
+});
+
+
+test('Skoka uses the exact PADBoost ability key and moves two extra spaces instead of falling',()=>{
+ const r=createRace({players:[{id:'a',name:'Skoka',picks:['c38']},{id:'b',name:'Rival',picks:['c01']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const x=r.racers[0];x.position=7;
+ const old=Math.random;Math.random=()=>0.999999; // natural six would pass PAD; force exact landing below
+ try{
+  // Start at 8 with a natural one: landing on PAD 9 must become 11.
+  x.position=8;Math.random=()=>0;
+  takeTurn(r,'a',{});
+ }finally{Math.random=old;}
+ assert.equal(x.position,11);
+ assert.equal(x.tripped,false);
+ assert.match(r.log.join(' '),/izbjegava PAD i dobija \+2 polja/);
+});
+test('ordinary racer is marked tripped when landing on PAD',()=>{
+ const r=createRace({players:[{id:'a',name:'Rival',picks:['c03']},{id:'b',name:'Other',picks:['c02']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const x=r.racers[0];x.position=8;
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(x.position,9);
+ assert.equal(x.tripped,true);
+});
+test('Maja is immune to PAD and Skoka receives the PAD movement bonus',()=>{
+ const r=createRace({players:[{id:'a',name:'Maja',picks:['c29']},{id:'b',name:'Skoka',picks:['c38']}]},0);
+ r.firstRoundComplete=true;r.effects={};
+ const maja=r.racers[0],skoka=r.racers[1];
+ maja.position=7;skoka.position=8;
+ const old=Math.random;Math.random=()=>0;
+ try{takeTurn(r,'a',{});}finally{Math.random=old;}
+ assert.equal(maja.tripped,false);
+ assert.equal(maja.position,9); // Maja lands on PAD but does not fall
+});
+
+
+test('client uses the server tripped state for fallen visuals, controls and standings',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const client=fs.readFileSync(path.join(__dirname,'../public/game.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'../public/style.css'),'utf8');
+ assert.match(client,/x\.tripped\?'fallen '/);
+ assert.match(client,/!active\?\.tripped/);
+ assert.match(client,/x\.tripped\?'PAO'/);
+ assert.match(css,/\.piece\.fallen/);
+ assert.match(css,/rotate\(90deg\)/);
+ assert.match(css,/\.cell:has\(\.piece\.fallen\)/);
+ assert.doesNotMatch(client,/PADped/);
+});
+test('Skoka ability identifier matches the server PAD resolution branch',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const client=fs.readFileSync(path.join(__dirname,'../server/characters.js'),'utf8');
+ const logic=fs.readFileSync(path.join(__dirname,'../server/gameLogic.js'),'utf8');
+ assert.match(client,/"PADBoost"/);
+ assert.match(logic,/ability==='PADBoost'/);
+ assert.doesNotMatch(logic,/tripBoost/);
 });

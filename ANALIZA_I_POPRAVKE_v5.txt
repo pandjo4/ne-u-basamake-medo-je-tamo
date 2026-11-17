@@ -1,0 +1,39 @@
+NUBMJT v5 — ANALIZA, POPRAVKE I PROVJERA
+
+GLAVNI POPRAVCI
+
+1. PAD / stanje oborenog igrača
+- Server je stanje igrača čuvao u polju `tripped`.
+- Frontend je za prikaz, blokiranje poteza i tabelu poretka provjeravao pogrešno polje `PADped`.
+- Zbog nepodudaranja karakter nije bio prikazan kao oboren, iako je server znao da je pao.
+- Frontend sada koristi `tripped` na svim relevantnim mjestima.
+- Pali karakter se okreće približno 90 stepeni, zatamnjuje i dobija pulsirajući crveni sjaj.
+- Polje na kojem se nalazi oboreni karakter dobija naglašen crveni okvir i pulsirajući border.
+- U tabeli poretka piše PAO, a kontrole poteza ostaju blokirane dok se igrač ne oporavi.
+- Dodana je podrška za prefers-reduced-motion.
+
+2. SKOKA — PADBoost
+- U rosteru je sposobnost definisana kao `PADBoost`.
+- Server je provjeravao `tripBoost`, pa se Skokina sposobnost nikada nije aktivirala.
+- Server sada provjerava tačan ključ `PADBoost`.
+- Kada Skoka završi potez na polju 9 ili 22, ne pada i dobija dodatna 2 polja naprijed.
+- Dodatno kretanje se bilježi u logu kao izbjegavanje PAD-a.
+
+UI / CSS DORADE
+- PAD polja imaju jasniji kontrast, isprekidani unutrašnji okvir i suptilan sjaj.
+- Oboreni karakter i njegovo polje imaju animirani vizuelni feedback.
+- Dodat je jasniji fokus za tastaturu, glađi hover na poljima i naglašen prikaz igrača čiji je potez.
+- Dodatno su dotjerani razmaci i veličine karaktera na uskim ekranima.
+- Uveden je cache-busting parametar v=5 za CSS i JS kako bi preglednik nakon deploya povukao nove fajlove.
+
+PROVJERA
+- `node --check server/gameLogic.js` — PROLAZI
+- `node --check server/server.js` — PROLAZI
+- `node --check public/game.js` — PROLAZI
+- `npm test` — 78/78 TESTOVA PROLAZI
+- Dodani su regresioni testovi za Skoku, običan PAD, Majinu otpornost na PAD, frontend stanje oborenog lika i tačan ključ sposobnosti.
+- Provjereno je da sve ilustracije likova postoje.
+- Render konfiguracija, Socket.IO komunikacija, sistem soba, izbor likova i bodovanje nisu mijenjani.
+
+NAPOMENA
+Ovo je provjera izvornog koda i automatizovanih testova. Nakon postavljanja na Render preporučuje se kratka stvarna multiplayer provjera na telefonu i laptopu, posebno animacije kretanja i reconnect igrača.

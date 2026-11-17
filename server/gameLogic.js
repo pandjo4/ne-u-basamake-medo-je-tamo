@@ -36,7 +36,7 @@ function resolveFinish(r,x){
  // Before first place is claimed, field 31 is only a passage, not a finish.
  if(r.finishOrder.length===0&&x.position>=31&&x.position<32)x.position=31;
 }
-function trip(r,x){if(x.character.ability==='heroBonus'||x.character.ability==='tripBoost')return;if(x.character.ability==='shield'&&!x.used.shield){x.used.shield=true;addLog(r,`${x.character.name} poništava efekat PAD.`);return;}x.tripped=true;addLog(r,`${x.character.name} je PAD! Sljedeći potez se oporavlja.`);}
+function trip(r,x){if(x.character.ability==='heroBonus'||x.character.ability==='PADBoost')return;if(x.character.ability==='shield'&&!x.used.shield){x.used.shield=true;addLog(r,`${x.character.name} poništava efekat PAD.`);return;}x.tripped=true;addLog(r,`${x.character.name} je PAD! Sljedeći potez se oporavlja.`);}
 function move(r,x,delta,{backward=false,ignoreEffects=false,passing=true}={}){
  if(!active(x)||!delta)return;
  const reverse=x.character.ability==='reverse';const dir=(backward?-1:1)*(reverse?-1:1);const from=x.position;const to=Math.max(0,Math.min(32,from+dir*delta));
@@ -44,7 +44,7 @@ function move(r,x,delta,{backward=false,ignoreEffects=false,passing=true}={}){
  x.position=to;
  if(!ignoreEffects&&x.character.ability==='thrifty'&&(to===9||to===22||Object.hasOwn(r.effects,to))){x.coins++;addLog(r,`${x.character.name} pronalazi novčić (+1).`);}
  if(!ignoreEffects&&r.effects[to]){const effect=r.effects[to];if(reverse){x.position=Math.max(0,x.position+effect);addLog(r,`${x.character.name} koristi negativno polje kao prečicu.`);}else{addLog(r,`${x.character.name} nailazi na ${effect}.`);x.position=Math.max(0,x.position+effect);}}
- if(!ignoreEffects&&!reverse&&(to===9||to===22)){if(x.character.ability==='tripBoost'){x.position=Math.min(32,x.position+2);addLog(r,`${x.character.name} koristi blatni zalet: +2.`);}else trip(r,x);}
+ if(!ignoreEffects&&!reverse&&(to===9||to===22)){if(x.character.ability==='PADBoost'){x.position=Math.min(32,x.position+2);addLog(r,`${x.character.name} izbjegava PAD i dobija +2 polja.`);}else trip(r,x);}
  if(!ignoreEffects&&!reverse){for(const y of r.racers){if(y===x||!active(y)||y.position!==x.position)continue;
   // Orgomni bebać nikada ne dijeli polje s drugim trkačem (START je izuzetak).
   if(x.position!==0&&(y.character.ability==='giantBaby'||x.character.ability==='giantBaby')){
